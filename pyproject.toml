@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-dbquery"
-version = "0.0.1"
+version = "0.1.0"
 description = "CKAN extension for Universities in Argentina"
 readme = "README.md"
 authors = [
