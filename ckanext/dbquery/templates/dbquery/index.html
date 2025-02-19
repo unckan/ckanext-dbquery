@@ -1,4 +1,6 @@
-{% extends "base.html" %}
+{% extends "page.html" %}
+
+{% block primary_content %}
 
 {% block title %}DBQuery Admin{% endblock %}
 
@@ -17,4 +19,6 @@
       {% endfor %}
     </ul>
   {% endif %}
+{% endblock %}
+
 {% endblock %}

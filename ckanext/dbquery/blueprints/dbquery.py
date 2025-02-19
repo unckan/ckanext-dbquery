@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, flash
 from ckan.plugins import toolkit
 
-dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/admin/dbquery')
+dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/dbquery')
+
 
 @dbquery_bp.route('/index', methods=['GET', 'POST'], endpoint='index')
 def index():
@@ -15,10 +16,12 @@ def index():
         table = request.form.get('table')
         if table:
             try:
+                # Ejecuta la acción 'dbquery_execute'
+                context = {'user': toolkit.c.user}
+                data_dict = {'table': table}
+
                 # Llama a la acción custom_query para obtener los datos
-                context = {'model': toolkit.get_action('get_site_user')(None, {})['name']}
-                # Nota: ajusta el contexto según sea necesario.
-                results = toolkit.get_action('custom_query')(context, {'table': table})
+                results = toolkit.get_action('custom_query')(context, data_dict)
             except Exception as e:
                 flash("Error en la consulta: %s" % e, 'error')
         else:

@@ -3,8 +3,9 @@ import psycopg2
 from psycopg2 import sql
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from blueprints.dbquery import dbquery_bp
-
+from ckanext.dbquery.blueprints.dbquery import dbquery_bp
+from ckanext.dbquery.actions import dbquery as dbquery_actions
+from ckanext.dbquery.auth import dbquery as dbquery_auth
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ def query_database(table_name):
 class DbqueryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IActions)
+    plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IBlueprint)
 
     # IConfigurer
@@ -51,22 +53,27 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         toolkit.add_template_directory(config_, "templates")
         toolkit.add_public_directory(config_, "public")
         toolkit.add_resource("assets", "dbquery")
-        toolkit.add_ckan_admin_tab(config_, "dbquery.index", "DBQuery", icon="database")
 
     # IBlueprint: Registra el blueprint dbquery_bp
     def get_blueprint(self):
         return dbquery_bp
 
-    # IActions: Registra la acción custom 'custom_query'
+    # IActions
     def get_actions(self):
         return {
-            "custom_query": DbqueryPlugin.custom_query
+            "dbquery_execute": dbquery_actions.dbquery_execute,
+        }
+
+    # IAuthFunctions
+    def get_auth_functions(self):
+        return {
+            "dbquery_execute": dbquery_auth.dbquery_execute,
         }
 
     @staticmethod
     def custom_query(context, data_dict):
         """Realiza una consulta a la base de datos y retorna los resultados.
-        
+
         Se espera que en data_dict se incluya la clave 'table' con el nombre
         de la tabla a consultar.
         """
