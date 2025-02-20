@@ -1,4 +1,5 @@
 import logging
+import os
 import psycopg2
 from psycopg2 import sql
 import ckan.plugins as plugins
@@ -50,7 +51,9 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     # IConfigurer
 
     def update_config(self, config_):
-        toolkit.add_template_directory(config_, "templates")
+        templates_path = os.path.join(os.path.dirname(__file__), 'templates')
+        log.info("Registrando templates en: %s", templates_path)
+        toolkit.add_template_directory(config_, templates_path)
         toolkit.add_public_directory(config_, "public")
         toolkit.add_resource("assets", "dbquery")
 

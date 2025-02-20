@@ -1,24 +1,22 @@
-{% extends "page.html" %}
-
-{% block primary_content %}
+{% extends "admin/base.html" %}
 
 {% block title %}DBQuery Admin{% endblock %}
 
-{% block page %}
-  <h1>DBQuery - Consulta personalizada</h1>
-  <form method="post">
-    <label for="table">Nombre de la tabla:</label>
-    <input type="text" name="table" id="table" required>
-    <button type="submit">Consultar</button>
-  </form>
-  {% if results is not none %}
-    <h2>Resultados:</h2>
-    <ul>
-      {% for row in results %}
-        <li>{{ row }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endblock %}
-
+{% block primary_content %}
+  {% block page %}
+    <h1>DBQuery - Consulta personalizada</h1>
+    <form method="post">
+      <label for="table">Nombre de la tabla:</label>
+      <input type="text" name="table" id="table" required>
+      <button type="submit">Consultar</button>
+    </form>
+    {% if results is not none %}
+      <h2>Resultados:</h2>
+      <ul>
+        {% for row in results %}
+          <li>{{ row }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endblock %}
 {% endblock %}
