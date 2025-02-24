@@ -1,12 +1,11 @@
-{% extends "admin/base.html" %}
+{% extends "page.html" %}
 
 {% block title %}DBQuery Admin{% endblock %}
 
 {% block primary_content %}
-  {% block page %}
     <h1>DBQuery - Consulta personalizada</h1>
     <form method="post">
-      <label for="table">Nombre de la tabla:</label>
+      <label for="table">Nombre de la tabla</label>
       <input type="text" name="table" id="table" required>
       <button type="submit">Consultar</button>
     </form>
@@ -18,5 +17,5 @@
         {% endfor %}
       </ul>
     {% endif %}
-  {% endblock %}
+
 {% endblock %}
