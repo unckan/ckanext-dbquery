@@ -5,8 +5,8 @@
 {% block primary_content %}
     <h1>DBQuery - Consulta personalizada</h1>
     <form method="post">
-      <label for="table">Nombre de la tabla</label>
-      <input type="text" name="table" id="table" required>
+      <label for="query">Parametro de Busqueda</label>
+      <input type="text" name="query" id="query" required>
       <button type="submit">Consultar</button>
     </form>
     {% if results is not none %}

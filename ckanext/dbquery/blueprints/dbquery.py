@@ -16,17 +16,32 @@ def index():
         base.abort(403, ("Need to be system administrator to administer"))
     results = None
     if request.method == 'POST':
-        table = request.form.get('table')
-        if table:
-            try:
-                # Ejecuta la acción 'dbquery_execute'
-                context = {'user': toolkit.c.user}
-                data_dict = {'table': table}
+        # Obtén el valor ingresado por el usuario
+        q = request.form.get('query', '').strip()
 
-                # Llama a la acción custom_query para obtener los datos
+        if q:
+            try:
+                # Construye el contexto y data_dict para la acción
+                context = {'user': toolkit.c.user}
+                data_dict = {'query': q}
+
+                # Llama a la acción custom_query
                 results = toolkit.get_action('custom_query')(context, data_dict)
+
+                if not results:
+                    flash("No se encontraron resultados para la consulta.", 'info')
+
+            except toolkit.ValidationError as ve:
+                flash(f"Error de validación: {ve.error_summary}", 'error')
+
+            except toolkit.NotAuthorized:
+                flash("No tiene permiso para ejecutar esta consulta.", 'error')
+
             except Exception as e:
-                flash("Error en la consulta: %s" % e, 'error')
+                flash(f"Error al ejecutar la consulta: {e}", 'error')
+
         else:
-            flash("Debe especificar el nombre de la tabla", 'error')
+            flash("Debe especificar una consulta válida.", 'error')
+
+    # Renderiza la plantilla con los resultados (si existen)
     return render_template('dbquery/index.html', results=results)
