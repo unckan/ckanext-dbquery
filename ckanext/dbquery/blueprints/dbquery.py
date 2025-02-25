@@ -29,7 +29,7 @@ def index():
                 results = toolkit.get_action('custom_query')(context, data_dict)
 
                 if not results:
-                    flash("No se encontraron resultados para la consulta.", 'info')
+                    flash(f"No se encontraron resultados para la consulta. {q}", 'info')
 
             except toolkit.ValidationError as ve:
                 flash(f"Error de validación: {ve.error_summary}", 'error')

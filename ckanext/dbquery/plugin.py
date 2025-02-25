@@ -14,10 +14,10 @@ log = logging.getLogger(__name__)
 def query_database(query, params=None):
     """ Realiza una consulta a la base de datos y retorna los resultados """
     # Obtén los parámetros de conexión desde la configuración (puedes definirlos en ckan.ini)
-    dbname = toolkit.config.get('dbquery.dbname', 'tu_base')
-    user = toolkit.config.get('dbquery.user', 'tu_usuario')
-    password = toolkit.config.get('dbquery.password', 'tu_password')
-    host = toolkit.config.get('dbquery.host', 'localhost')
+    dbname = toolkit.config.get('dbquery.dbname', 'postgres')
+    user = toolkit.config.get('dbquery.user', 'postgres')
+    password = toolkit.config.get('dbquery.password', 'postgres')
+    host = toolkit.config.get('dbquery.host', 'postgresql_uni')
     port = toolkit.config.get('dbquery.port', '5432')
 
     try:
@@ -83,30 +83,94 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     @staticmethod
     def custom_query(context, data_dict):
         """
-        Realiza una consulta SQL basada en una query de búsqueda.
-        
-        Parámetros esperados en data_dict:
-        - 'query': query de búsqueda (ej. "economía", "autos", "escuelas")
-        - 'limit': número máximo de resultados (opcional, por defecto 10)
-        
-        Devuelve:
-        - Lista de registros que coinciden con la query.
+        Realiza una búsqueda en la base de datos:
+        1) Tablas cuyo nombre coincida con el texto.
+        2) Columnas cuyo nombre coincida con el texto.
+        3) Filas de cualquier tabla y columna (de tipo texto) que coincida con el texto.
+
+        data_dict:
+        - "query": texto de búsqueda (obligatorio)
+        - "limit_rows": límite de filas a mostrar por tabla-columna (opcional, default=5)
+
+        Retorna un diccionario con:
+        {
+            "tables": [...],
+            "columns": [...],
+            "rows": [
+            {
+                "table": "nombre_tabla",
+                "column": "nombre_columna",
+                "matches": [ ... filas encontradas ... ]
+            },
+            ...
+            ]
+        }
         """
         query = data_dict.get('query')
-        limit = data_dict.get('limit', 10)  # Valor por defecto si no se especifica
-
         if not query:
-            raise toolkit.ValidationError("Debe proporcionar un valor en 'query'.")
+            raise toolkit.ValidationError("Debe proporcionar 'query' en data_dict.")
 
-        query = """
-            SELECT * FROM my_table
-            WHERE query ILIKE %(query)s
-            LIMIT %(limit)s
-        """
-        
-        params = {
-            "query": f"%{query}%",  # Búsqueda parcial
-            "limit": limit
-        }
+        limit_rows = data_dict.get('limit_rows', 5)
 
-        return query_database(query, params)
+        # 1) Buscar tablas que coincidan con el texto
+        query_tables = sql.SQL("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            AND table_name ILIKE %s
+        """)
+        tables_found = query_database(query_tables, (f"%{query}%", ))
+
+        # 2) Buscar columnas que coincidan con el texto
+        query_columns = sql.SQL("""
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            AND column_name ILIKE %s
+        """)
+        columns_found = query_database(query_columns, (f"%{query}%", ))
+
+        # 3) Buscar filas que coincidan en cualquier tabla/columna de tipo texto
+        #    3.1) Primero obtener todas las columnas de tipo texto
+        query_text_columns = sql.SQL("""
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            AND data_type IN ('character varying', 'text')
+        """)
+        text_columns = query_database(query_text_columns)
+
+        row_matches = []
+        for tc in text_columns:
+            table_name = tc["table_name"]
+            column_name = tc["column_name"]
+
+            # Construir consulta dinámica
+            query_sql = sql.SQL("""
+                SELECT *
+                FROM {table}
+                WHERE {column} ILIKE %s
+                LIMIT %s
+            """).format(
+                table=sql.Identifier(table_name),
+                column=sql.Identifier(column_name)
+            )
+            try:
+                rows = query_database(query_sql, (f"%{query}%", limit_rows))
+            except Exception as e:
+                # Es posible que algunas tablas no tengan permisos o existan restricciones
+                log.warning(f"Error consultando {table_name}.{column_name}: {e}")
+                rows = []
+
+            if rows:
+                row_matches.append({
+                    "table": table_name,
+                    "column": column_name,
+                    "matches": rows
+                })
+
+            return {
+                "tables": tables_found,
+                "columns": columns_found,
+                "rows": row_matches
+            }
