@@ -1,7 +1,7 @@
 import logging
 import os
 import psycopg2
-from psycopg2 import sql
+
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.dbquery.blueprints.dbquery import dbquery_bp
@@ -9,6 +9,16 @@ from ckanext.dbquery.actions import dbquery as dbquery_actions
 from ckanext.dbquery.auth import dbquery as dbquery_auth
 
 log = logging.getLogger(__name__)
+
+# Lista de palabras reservadas en PostgreSQL
+RESERVED_WORDS = {"group", "user", "order", "select", "table"}
+
+
+def quote_identifier(identifier):
+    """ Agrega comillas dobles si el nombre de la tabla o columna es una palabra reservada. """
+    if identifier.lower() in RESERVED_WORDS:
+        return f'"{identifier}"'
+    return identifier
 
 
 def query_database(query, params=None):
@@ -19,7 +29,6 @@ def query_database(query, params=None):
     password = toolkit.config.get('dbquery.password', 'pass')
     host = toolkit.config.get('dbquery.host', 'postgresql_uni')
     port = toolkit.config.get('dbquery.port', '5432')
-
 
     try:
         conn = psycopg2.connect(
@@ -48,6 +57,40 @@ def query_database(query, params=None):
         raise
 
     return [dict(zip(colnames, row)) for row in rows]
+
+
+def column_exists(table_name, column_name):
+    """ Verifica si una columna existe en una tabla de la base de datos """
+    query = """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        AND table_name = %s
+        AND LOWER(column_name) = LOWER(%s)
+    """
+    result = query_database(query, (table_name, column_name))
+    return bool(result)
+
+
+def safe_query_logs():
+    """ Intenta ejecutar una consulta en la tabla logs de manera segura """
+    table_name = "logs"
+    column_name = "funcName"
+
+    # Verifica si la columna existe antes de hacer la consulta
+    if column_exists(table_name, column_name):
+        column_name_quoted = quote_identifier(column_name)  # Usa comillas dobles si es sensible a mayúsculas
+        query = f'SELECT {column_name_quoted} FROM {table_name} LIMIT 10'
+
+        try:
+            results = query_database(query)
+            return results
+        except Exception as e:
+            log.warning(f"Error al consultar {table_name}.{column_name}: {e}")
+            return []
+    else:
+        log.warning(f"La columna {column_name} no existe en {table_name}. Omitiendo consulta.")
+        return []
 
 
 class DbqueryPlugin(plugins.SingletonPlugin):
@@ -116,64 +159,53 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         limit_rows = data_dict.get('limit_rows', 50)
 
         # 1) Buscar tablas que coincidan con el texto
-        query_tables = sql.SQL("""
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            AND table_name ILIKE %s
-        """)
-        tables_found = query_database(query_tables, (f"%{query}%", ))
+        query_tables = """
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name ILIKE %s
+        """
+        tables_found = query_database(query_tables, (f"%{query}%",))
 
         # 2) Buscar columnas que coincidan con el texto
-        query_columns = sql.SQL("""
-            SELECT table_name, column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-            AND column_name ILIKE %s
-        """)
-        columns_found = query_database(query_columns, (f"%{query}%", ))
+        query_columns = """
+            SELECT table_name, column_name FROM information_schema.columns
+            WHERE table_schema = 'public' AND column_name ILIKE %s
+        """
+        columns_found = query_database(query_columns, (f"%{query}%",))
 
         # 3) Buscar filas que coincidan en cualquier tabla/columna de tipo texto
         #    3.1) Primero obtener todas las columnas de tipo texto
-        query_text_columns = sql.SQL("""
-            SELECT table_name, column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-            AND data_type IN ('character varying', 'text')
-        """)
+        query_text_columns = """
+            SELECT table_name, column_name FROM information_schema.columns
+            WHERE table_schema = 'public' AND data_type IN ('character varying', 'text')
+        """
         text_columns = query_database(query_text_columns)
 
         row_matches = []
         for tc in text_columns:
-            table_name = tc["table_name"]
-            column_name = tc["column_name"]
+            table_name = quote_identifier(tc["table_name"])
+            column_name = quote_identifier(tc["column_name"])
 
-            # Construir consulta dinámica
-            query_sql = sql.SQL("""
-                SELECT *
-                FROM {table}
-                WHERE {column} ILIKE %s
+            query_sql = f"""
+                SELECT {column_name} FROM {table_name}
+                WHERE {column_name} ILIKE %s
                 LIMIT %s
-            """).format(
-                table=sql.Identifier(table_name),
-                column=sql.Identifier(column_name)
-            )
+            """
+
             try:
                 rows = query_database(query_sql, (f"%{query}%", limit_rows))
             except Exception as e:
-                # Es posible que algunas tablas no tengan permisos o existan restricciones
-                log.warning(f"Error consultando {table_name}.{column_name}: {e}")
+                log.warning(f"Error al consultar {table_name}.{column_name}: {e}")
                 rows = []
 
             if rows:
                 row_matches.append({
-                    "table": table_name,
-                    "column": column_name,
+                    "table": tc["table_name"],
+                    "column": tc["column_name"],
                     "matches": rows
                 })
 
-            return {
-                "tables": tables_found,
-                "columns": columns_found,
-                "rows": row_matches
-            }
+        return {
+            "tables": [t["table_name"] for t in tables_found],
+            "columns": [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found],
+            "rows": row_matches
+        }
