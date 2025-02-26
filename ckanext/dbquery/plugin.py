@@ -14,11 +14,12 @@ log = logging.getLogger(__name__)
 def query_database(query, params=None):
     """ Realiza una consulta a la base de datos y retorna los resultados """
     # Obtén los parámetros de conexión desde la configuración (puedes definirlos en ckan.ini)
-    dbname = toolkit.config.get('dbquery.dbname', 'postgres')
-    user = toolkit.config.get('dbquery.user', 'postgres')
-    password = toolkit.config.get('dbquery.password', 'postgres')
+    dbname = toolkit.config.get('dbquery.dbname', 'ckan_test')
+    user = toolkit.config.get('dbquery.user', 'ckan_default')
+    password = toolkit.config.get('dbquery.password', 'pass')
     host = toolkit.config.get('dbquery.host', 'postgresql_uni')
     port = toolkit.config.get('dbquery.port', '5432')
+
 
     try:
         conn = psycopg2.connect(
@@ -31,6 +32,8 @@ def query_database(query, params=None):
         cur = conn.cursor()
 
         # Ejecutar la consulta con parámetros seguros
+        log.info("Ejecutando consulta: %s", query)
+
         cur.execute(query, params or {})
         rows = cur.fetchall()
 
@@ -110,7 +113,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         if not query:
             raise toolkit.ValidationError("Debe proporcionar 'query' en data_dict.")
 
-        limit_rows = data_dict.get('limit_rows', 5)
+        limit_rows = data_dict.get('limit_rows', 50)
 
         # 1) Buscar tablas que coincidan con el texto
         query_tables = sql.SQL("""

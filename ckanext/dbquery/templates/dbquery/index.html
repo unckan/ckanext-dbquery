@@ -10,7 +10,7 @@
       <button type="submit">Consultar</button>
     </form>
     {% if results is not none %}
-      <h2>Resultados:</h2>
+      <h2>Resultados para {{ query }}:</h2>
       <ul>
         {% for row in results %}
           <li>{{ row }}</li>
