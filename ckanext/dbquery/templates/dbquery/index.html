@@ -1,21 +1,24 @@
-{% extends "page.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}DBQuery Admin{% endblock %}
 
 {% block primary_content %}
-    <h1>DBQuery - Consulta personalizada</h1>
-    <form method="post">
-      <label for="query">Parametro de Busqueda</label>
-      <input type="text" name="query" id="query" required>
-      <button type="submit">Consultar</button>
-    </form>
-    {% if results is not none %}
-      <h2>Resultados para {{ query }}:</h2>
-      <ul>
-        {% for row in results %}
-          <li>{{ row }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+{{ super() }}
+    <h1>DBQuery</h1>
+    <div class="module-content">
+      <form method="post">
+        <label for="query">{{ _('Search Parameter') }}</label>
+        <input type="text" name="query" id="query" required>
+        <button type="submit">{{ _('Search') }}</button>
+      </form>
+      {% if results is not none %}
+        <h2>{{ _('Results for') }} {{ query }}:</h2>
+        <ul>
+          {% for row in results %}
+            <li>{{ row }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
 
 {% endblock %}

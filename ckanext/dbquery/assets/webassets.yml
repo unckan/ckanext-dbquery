@@ -7,8 +7,8 @@
 #     preload:
 #       - base/main
 
-# dbquery-css:
-#   filter: cssrewrite
-#   output: ckanext-dbquery/%(version)s-dbquery.css
-#   contents:
-#     - css/dbquery.css
+dbquery-css:
+  filter: cssrewrite
+  output: ckanext-dbquery/%(version)s-dbquery.css
+  contents:
+    - css/dbquery.css

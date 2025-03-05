@@ -2,5 +2,14 @@
 
 {% block content_primary_nav %}
   {{ super() }}
-  {{ h.build_nav_icon('dbquery.index', _('DBQuery'), icon='icon-sitemap') }}
+  {{ h.build_nav_icon('dbquery.index', _('DBQuery'), icon='icon-database') }}
+{% endblock %}
+
+{% block secondary_content %}
+<div class="module module-narrow module-shallow">
+  <h2 class="module-heading">
+    <i class="fa fa-history"></i>
+    {{ _('DataBase Query') }}
+  </h2>
+</div>
 {% endblock %}
