@@ -5,6 +5,62 @@ from ckan.common import _
 dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/ckan-admin/dbquery')
 
 
+def _display_search_results(results, query):
+    """Helper function to display flash messages with search results"""
+    if not results or (not results.get('tables') and not results.get('columns') and
+                       not results.get('rows') and not results.get('objects')):
+        flash(_(f"No se encontraron resultados para: {query}"), 'info')
+        return
+
+    flash(_("Consulta ejecutada con éxito"), 'success')
+
+    # Mensajes más específicos sobre lo que se encontró
+    if results.get('tables'):
+        flash(_(f"Se encontraron {len(results['tables'])} tablas que coinciden con '{query}'"), 'info')
+
+    if results.get('columns'):
+        column_info = []
+        for col in results['columns']:
+            column_info.append(
+                f"{col['column']} (en tabla {col['table']}, "
+                f"tipo {col.get('data_type', 'desconocido')})"
+            )
+        flash(_(f"Se encontraron {len(results['columns'])} columnas relacionadas con '{query}': "
+                f"{', '.join(column_info)}"), 'info')
+
+    if results.get('rows'):
+        tables_with_rows = [f"{row['table']}.{row['column']}" for row in results['rows']]
+        flash(_(f"Se encontraron coincidencias en {len(results['rows'])} tablas/columnas: "
+                f"{', '.join(tables_with_rows)}"), 'info')
+
+    if results.get('objects'):
+        object_types = set(obj['type'] for obj in results['objects'])
+        flash(_(f"Se encontraron {len(results['objects'])} objetos de tipo: {', '.join(object_types)}"), 'info')
+
+
+def _execute_search(query, object_type):
+    """Helper function to execute the search query"""
+    try:
+        # Construye el contexto y data_dict para la acción
+        context = {'user': toolkit.c.user, 'auth_user_obj': toolkit.c.userobj}
+        data_dict = {'query': query}
+
+        # Si se ha seleccionado un tipo de objeto, lo agregamos al data_dict
+        if object_type:
+            data_dict['object_type'] = object_type
+
+        # Llama a la acción custom_query
+        return toolkit.get_action('custom_query')(context, data_dict)
+    except toolkit.ValidationError as ve:
+        flash(_(f"Error de validación: {str(ve)}"), 'error')
+    except toolkit.NotAuthorized:
+        flash(_("No tiene permiso para ejecutar esta consulta."), 'error')
+    except Exception as e:
+        flash(_(f"Error al ejecutar la consulta: {str(e)}"), 'error')
+
+    return None
+
+
 @dbquery_bp.route('/index', methods=['GET', 'POST'])
 def index():
     """
@@ -33,32 +89,9 @@ def index():
         object_type = request.form.get('object_type', '').strip()
 
         if q:
-            try:
-                # Construye el contexto y data_dict para la acción
-                context = {'user': toolkit.c.user, 'auth_user_obj': toolkit.c.userobj}
-                data_dict = {'query': q}
-
-                # Si se ha seleccionado un tipo de objeto, lo agregamos al data_dict
-                if object_type:
-                    data_dict['object_type'] = object_type
-
-                # Llama a la acción custom_query
-                results = toolkit.get_action('custom_query')(context, data_dict)
-
-                if not results or (not results.get('tables') and not results.get('columns') and
-                                   not results.get('rows') and not results.get('objects')):
-                    flash(_(f"No se encontraron resultados para: {q}"), 'info')
-                else:
-                    flash(_("Consulta ejecutada con éxito"), 'success')
-
-            except toolkit.ValidationError as ve:
-                flash(_(f"Error de validación: {str(ve)}"), 'error')
-
-            except toolkit.NotAuthorized:
-                flash(_("No tiene permiso para ejecutar esta consulta."), 'error')
-
-            except Exception as e:
-                flash(_(f"Error al ejecutar la consulta: {str(e)}"), 'error')
+            results = _execute_search(q, object_type)
+            if results:
+                _display_search_results(results, q)
         else:
             flash(_("Debe especificar una consulta válida."), 'error')
 

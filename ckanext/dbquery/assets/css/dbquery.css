@@ -1,0 +1,9 @@
+.alert {
+    color: white; /* Texto en blanco para mejor contraste */
+    background-color: rgb(0, 26, 255); /* Fondo azul */
+    padding: 10px 15px; /* Espaciado interno */
+    border-radius: 5px; /* Bordes redondeados */
+    font-weight: bold; /* Texto en negrita */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Sombra sutil */
+    display: inline-block; /* Para que no ocupe todo el ancho */
+}

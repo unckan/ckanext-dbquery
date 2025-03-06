@@ -66,7 +66,7 @@ def safe_query_logs():
     column_name = "funcName"
 
     # Verifica si la columna existe antes de hacer la consulta
-    if column_exists(table_name, column_name):
+    if (column_exists(table_name, column_name)):
         column_name_quoted = quote_identifier(column_name)  # Usa comillas dobles si es sensible a mayúsculas
         query = f'SELECT {column_name_quoted} FROM {table_name} LIMIT 10'
 
@@ -124,13 +124,43 @@ class DbqueryPlugin(plugins.SingletonPlugin):
 
     @staticmethod
     def _search_columns(query):
-        """Buscar columnas que coincidan con el texto"""
+        """Buscar columnas que coincidan con el texto y obtener metadatos adicionales"""
         query_columns = """
-            SELECT table_name, column_name FROM information_schema.columns
-            WHERE table_schema = 'public' AND column_name ILIKE :query
+            SELECT c.table_name,
+                   c.column_name,
+                   c.data_type,
+                   c.character_maximum_length,
+                   c.is_nullable,
+                   (SELECT count(*) FROM information_schema.key_column_usage k
+                    WHERE k.table_name = c.table_name
+                    AND k.column_name = c.column_name) > 0 as is_key
+            FROM information_schema.columns c
+            WHERE c.table_schema = 'public' AND c.column_name ILIKE :query
+            ORDER BY c.table_name, c.column_name
         """
         columns_found = query_database(query_columns, {"query": f"%{query}%"})
-        return [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found]
+        result = []
+        for c in columns_found:
+            # Crear un texto descriptivo basado en los metadatos obtenidos
+            tipo = f"{c['data_type']}"
+            if c['character_maximum_length']:
+                tipo += f"({c['character_maximum_length']})"
+
+            atributos = []
+            if c.get('is_key'):
+                atributos.append("clave")
+            if c.get('is_nullable') == 'NO':
+                atributos.append("obligatorio")
+
+            atributos_text = f" [{', '.join(atributos)}]" if atributos else ""
+
+            result.append({
+                "table": c["table_name"],
+                "column": c["column_name"],
+                "data_type": tipo,
+                "display": f"{c['table_name']}.{c['column_name']} ({tipo}{atributos_text})"
+            })
+        return result
 
     @staticmethod
     def _search_rows(query, limit_rows):
@@ -159,6 +189,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
                     row_matches.append({
                         "table": tc["table_name"],
                         "column": tc["column_name"],
+                        "display_path": f"{tc['table_name']}.{tc['column_name']}",  # Path for display
                         "matches": rows
                     })
             except Exception as e:

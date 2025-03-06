@@ -1,5 +1,11 @@
 {% ckan_extends %}
 
+
+{% block styles %}
+    {{ super() }}
+    {% asset 'dbquery/dbquery-css' %}
+{% endblock %}
+
 {% block content_primary_nav %}
   {{ super() }}
   {{ h.build_nav_icon('dbquery.index', _('DBQuery'), icon='icon-database') }}
