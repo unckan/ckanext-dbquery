@@ -113,58 +113,29 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         }
 
     @staticmethod
-    def custom_query(context, data_dict):
-        """
-        Realiza una búsqueda en la base de datos:
-        1) Tablas cuyo nombre coincida con el texto.
-        2) Columnas cuyo nombre coincida con el texto.
-        3) Filas de cualquier tabla y columna (de tipo texto) que coincida con el texto.
-        4) Objetos específicos por tipo (opcional)
-
-        data_dict:
-        - "query": texto de búsqueda (obligatorio)
-        - "limit_rows": límite de filas a mostrar por tabla-columna (opcional, default=50)
-        - "object_type": tipo de objeto específico a buscar (opcional, ej: "user", "group", "organization", "package")
-
-        Retorna un diccionario con:
-        {
-            "tables": [...],
-            "columns": [...],
-            "rows": [...],
-            "objects": [...] # Si se proporciona object_type
-        }
-        """
-        # Verificar autorización
-        toolkit.check_access('dbquery_custom_query', context, data_dict)
-
-        query = data_dict.get('query')
-        if not query:
-            raise toolkit.ValidationError({"query": "Debe proporcionar un texto de búsqueda."})
-
-        limit_rows = data_dict.get('limit_rows', 50)
-        object_type = data_dict.get('object_type')
-
-        results = {
-            "tables": [],
-            "columns": [],
-            "rows": []
-        }
-
-        # 1) Buscar tablas que coincidan con el texto
+    def _search_tables(query):
+        """Buscar tablas que coincidan con el texto"""
         query_tables = """
             SELECT table_name FROM information_schema.tables
             WHERE table_schema = 'public' AND table_name ILIKE :query
         """
         tables_found = query_database(query_tables, {"query": f"%{query}%"})
+        return [t["table_name"] for t in tables_found]
 
-        # 2) Buscar columnas que coincidan con el texto
+    @staticmethod
+    def _search_columns(query):
+        """Buscar columnas que coincidan con el texto"""
         query_columns = """
             SELECT table_name, column_name FROM information_schema.columns
             WHERE table_schema = 'public' AND column_name ILIKE :query
         """
         columns_found = query_database(query_columns, {"query": f"%{query}%"})
+        return [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found]
 
-        # 3) Buscar filas que coincidan en cualquier tabla/columna de tipo texto
+    @staticmethod
+    def _search_rows(query, limit_rows):
+        """Buscar filas que coincidan en cualquier tabla/columna de tipo texto"""
+        # Obtener todas las columnas de tipo texto
         query_text_columns = """
             SELECT table_name, column_name FROM information_schema.columns
             WHERE table_schema = 'public' AND data_type IN ('character varying', 'text')
@@ -184,115 +155,151 @@ class DbqueryPlugin(plugins.SingletonPlugin):
 
             try:
                 rows = query_database(query_sql, {"query": f"%{query}%", "limit_rows": limit_rows})
+                if rows:
+                    row_matches.append({
+                        "table": tc["table_name"],
+                        "column": tc["column_name"],
+                        "matches": rows
+                    })
             except Exception as e:
                 log.warning(f"Error al consultar {table_name}.{column_name}: {e}")
-                rows = []
 
-            if rows:
-                row_matches.append({
-                    "table": tc["table_name"],
-                    "column": tc["column_name"],
-                    "matches": rows
-                })
+        return row_matches
 
-        results["tables"] = [t["table_name"] for t in tables_found]
-        results["columns"] = [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found]
-        results["rows"] = row_matches
+    @staticmethod
+    def _search_specific_objects(object_type, query, limit_rows):
+        """Buscar objetos específicos según su tipo"""
+        objects_results = []
 
-        # 4) Búsqueda específica por tipo de objeto
-        if object_type:
-            results["objects"] = []
-
-            # Mapa de tipos de objetos a sus tablas y columnas principales
-            object_type_map = {
-                "user": {
-                    "table": "user",
-                    "id_column": "id",
-                    "name_columns": ["name", "fullname", "email"],
-                    "display": "name"
-                },
-                "group": {
-                    "table": "group",
-                    "id_column": "id",
-                    "name_columns": ["name", "title", "description"],
-                    "display": "title"
-                },
-                "organization": {
-                    "table": "group",
-                    "id_column": "id",
-                    "name_columns": ["name", "title", "description"],
-                    "display": "title",
-                    "filter": {"is_organization": True}
-                },
-                "package": {
-                    "table": "package",
-                    "id_column": "id",
-                    "name_columns": ["name", "title", "notes"],
-                    "display": "title"
-                },
-                "resource": {
-                    "table": "resource",
-                    "id_column": "id",
-                    "name_columns": ["name", "description", "url"],
-                    "display": "name"
-                }
+        # Mapa de tipos de objetos a sus tablas y columnas principales
+        object_type_map = {
+            "user": {
+                "table": "user",
+                "id_column": "id",
+                "name_columns": ["name", "fullname", "email"],
+                "display": "name"
+            },
+            "group": {
+                "table": "group",
+                "id_column": "id",
+                "name_columns": ["name", "title", "description"],
+                "display": "title"
+            },
+            "organization": {
+                "table": "group",
+                "id_column": "id",
+                "name_columns": ["name", "title", "description"],
+                "display": "title",
+                "filter": {"is_organization": True}
+            },
+            "package": {
+                "table": "package",
+                "id_column": "id",
+                "name_columns": ["name", "title", "notes"],
+                "display": "title"
+            },
+            "resource": {
+                "table": "resource",
+                "id_column": "id",
+                "name_columns": ["name", "description", "url"],
+                "display": "name"
             }
+        }
 
-            # Si el tipo de objeto está en nuestro mapa
-            if object_type in object_type_map:
-                obj_config = object_type_map[object_type]
-                table = obj_config["table"]
-                id_column = obj_config["id_column"]
-                name_columns = obj_config["name_columns"]
-                display_column = obj_config["display"]
+        # Si el tipo de objeto está en nuestro mapa
+        if object_type not in object_type_map:
+            log.warning(f"Tipo de objeto no reconocido: {object_type}")
+            return objects_results
 
-                # Construir la condición WHERE para los nombres de columnas
-                where_conditions = []
+        obj_config = object_type_map[object_type]
+        return DbqueryPlugin._execute_object_search(obj_config, object_type, query, limit_rows)
+
+    @staticmethod
+    def _execute_object_search(obj_config, object_type, query, limit_rows):
+        """Ejecuta la búsqueda de objetos según la configuración proporcionada"""
+        objects_results = []
+        table = obj_config["table"]
+        id_column = obj_config["id_column"]
+        name_columns = obj_config["name_columns"]
+        display_column = obj_config["display"]
+
+        # Construir la condición WHERE para los nombres de columnas
+        where_conditions = []
+        for col in name_columns:
+            where_conditions.append(f"{quote_identifier(col)} ILIKE :query")
+
+        where_clause = " OR ".join(where_conditions)
+
+        # Agregar filtros adicionales si existen
+        additional_filters = ""
+        filter_params = {"query": f"%{query}%"}
+
+        if "filter" in obj_config:
+            for key, value in obj_config["filter"].items():
+                additional_filters += f" AND {quote_identifier(key)} = :filter_{key}"
+                filter_params[f"filter_{key}"] = value
+
+        # Construir la consulta SQL
+        query_sql = f"""
+            SELECT {quote_identifier(id_column)}, {', '.join(quote_identifier(col) for col in name_columns)}
+            FROM {quote_identifier(table)}
+            WHERE ({where_clause}) {additional_filters}
+            AND state = 'active'
+            LIMIT :limit
+        """
+
+        try:
+            # Ejecutar la consulta
+            filter_params["limit"] = limit_rows
+            objects_found = query_database(query_sql, filter_params)
+
+            # Formatear los resultados para mostrar
+            for obj in objects_found:
+                obj_display = {
+                    "id": obj[id_column],
+                    "type": object_type,
+                    "display_name": obj[display_column]
+                }
+                # Agregar todas las columnas encontradas
                 for col in name_columns:
-                    where_conditions.append(f"{quote_identifier(col)} ILIKE :query")
+                    if col in obj and obj[col]:
+                        obj_display[col] = obj[col]
 
-                where_clause = " OR ".join(where_conditions)
+                objects_results.append(obj_display)
 
-                # Agregar filtros adicionales si existen
-                additional_filters = ""
-                filter_params = {"query": f"%{query}%"}
+        except Exception as e:
+            log.warning(f"Error al buscar objetos de tipo {object_type}: {e}")
 
-                if "filter" in obj_config:
-                    for key, value in obj_config["filter"].items():
-                        additional_filters += f" AND {quote_identifier(key)} = :filter_{key}"
-                        filter_params[f"filter_{key}"] = value
+        return objects_results
 
-                # Construir la consulta SQL
-                query_sql = f"""
-                    SELECT {quote_identifier(id_column)}, {', '.join(quote_identifier(col) for col in name_columns)}
-                    FROM {quote_identifier(table)}
-                    WHERE ({where_clause}) {additional_filters}
-                    AND state = 'active'
-                    LIMIT :limit
-                """
+    @staticmethod
+    def custom_query(context, data_dict):
+        """
+        Realiza una búsqueda en la base de datos:
+        1) Tablas cuyo nombre coincida con el texto.
+        2) Columnas cuyo nombre coincida con el texto.
+        3) Filas de cualquier tabla y columna (de tipo texto) que coincida con el texto.
+        4) Objetos específicos por tipo (opcional)
+        """
+        # Verificar autorización
+        toolkit.check_access('dbquery_custom_query', context, data_dict)
 
-                try:
-                    # Ejecutar la consulta
-                    filter_params["limit"] = limit_rows
-                    objects_found = query_database(query_sql, filter_params)
+        query = data_dict.get('query')
+        if not query:
+            raise toolkit.ValidationError({"query": "Debe proporcionar un texto de búsqueda."})
 
-                    # Formatear los resultados para mostrar
-                    for obj in objects_found:
-                        obj_display = {
-                            "id": obj[id_column],
-                            "type": object_type,
-                            "display_name": obj[display_column]
-                        }
-                        # Agregar todas las columnas encontradas
-                        for col in name_columns:
-                            if col in obj and obj[col]:
-                                obj_display[col] = obj[col]
+        limit_rows = data_dict.get('limit_rows', 50)
+        object_type = data_dict.get('object_type')
 
-                        results["objects"].append(obj_display)
+        # Inicializar el diccionario de resultados
+        results = {
+            "tables": DbqueryPlugin._search_tables(query),
+            "columns": DbqueryPlugin._search_columns(query),
+            "rows": DbqueryPlugin._search_rows(query, limit_rows)
+        }
 
-                except Exception as e:
-                    log.warning(f"Error al buscar objetos de tipo {object_type}: {e}")
-            else:
-                log.warning(f"Tipo de objeto no reconocido: {object_type}")
+        # Si se especificó un tipo de objeto, realizar búsqueda específica
+        if object_type:
+            results["objects"] = DbqueryPlugin._search_specific_objects(object_type, query, limit_rows)
 
         return results
