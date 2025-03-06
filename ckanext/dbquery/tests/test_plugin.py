@@ -8,7 +8,7 @@ from ckanext.dbquery.plugin import DbqueryPlugin
 class TestDbqueryPlugin:
     """Test the DbqueryPlugin class methods."""
     
-    def setup(self):
+    def setup_method(self):
         """Set up test fixtures."""
         self.plugin = DbqueryPlugin()
     
@@ -89,7 +89,7 @@ class TestSearchMethods:
         assert result[0]["column"] == "name"
         assert result[0]["matches"] == [{"name": "Test Resource"}]
     
-    @mock.patch("ckanext.dbquery.plugin._execute_object_search")
+    @mock.patch("ckanext.dbquery.plugin.DbqueryPlugin._execute_object_search")
     def test_search_specific_objects(self, mock_execute):
         """Test the _search_specific_objects method."""
         mock_execute.return_value = [

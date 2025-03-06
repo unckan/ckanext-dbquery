@@ -44,31 +44,35 @@ class TestExecuteSearch:
     """Tests for the _execute_search function."""
     
     @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.get_action")
-    def test_execute_search(self, mock_get_action):
+    @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c", spec=True)
+    def test_execute_search(self, mock_c, mock_get_action):
         """Test executing a search query."""
         mock_action = mock.MagicMock()
         mock_get_action.return_value = mock_action
         mock_action.return_value = {"tables": ["table1"]}
         
-        with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
-            mock_c.user = "test-user"
-            mock_c.userobj = "test-userobj"
-            
-            result = _execute_search("test", "")
-            
-            mock_get_action.assert_called_once_with("custom_query")
-            mock_action.assert_called_once()
-            assert result == {"tables": ["table1"]}
+        mock_c.user = "test-user"
+        mock_c.userobj = "test-userobj"
+        
+        result = _execute_search("test", "")
+        
+        mock_get_action.assert_called_once_with("custom_query")
+        mock_action.assert_called_once()
+        assert result == {"tables": ["table1"]}
     
     @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.get_action")
     @mock.patch("ckanext.dbquery.blueprints.dbquery.flash")
-    def test_execute_search_with_validation_error(self, mock_flash, mock_get_action):
+    @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c", spec=True)
+    def test_execute_search_with_validation_error(self, mock_c, mock_flash, mock_get_action):
         """Test handling validation errors."""
         from ckan.plugins.toolkit import ValidationError
         
         mock_action = mock.MagicMock()
         mock_get_action.return_value = mock_action
         mock_action.side_effect = ValidationError({"error": "Test error"})
+        
+        mock_c.user = "test-user"
+        mock_c.userobj = "test-userobj"
         
         result = _execute_search("test", "")
         

@@ -3,6 +3,7 @@
 import pytest
 from unittest import mock
 from ckan.logic import NotAuthorized
+from ckan.model import Session
 from ckanext.dbquery.actions.dbquery import dbquery_execute
 
 
@@ -11,7 +12,7 @@ class TestDbqueryExecute:
     
     def test_dbquery_execute_unauthorized(self):
         """Test unauthorized access."""
-        context = {"ignore_auth": False}
+        context = {"ignore_auth": False, "session": Session}
         data_dict = {"table": "user"}
         
         with pytest.raises(NotAuthorized):
@@ -19,7 +20,7 @@ class TestDbqueryExecute:
     
     def test_dbquery_execute_no_table(self):
         """Test validation error when no table is provided."""
-        context = {"ignore_auth": True}
+        context = {"ignore_auth": True, "session": Session}
         data_dict = {}
         
         with pytest.raises(Exception) as e:

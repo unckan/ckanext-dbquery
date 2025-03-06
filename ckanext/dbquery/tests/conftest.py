@@ -42,7 +42,9 @@ def test_resource(test_dataset):
 @pytest.fixture
 def app():
     """Return a WSGI app for testing Flask routes directly."""
-    return helpers.FunctionalTestBase().app
+    # FunctionalTestBase().app doesn't exist in this CKAN version
+    # Use the recommended way to get the test app
+    return helpers.get_test_app()
 
 
 @pytest.fixture
