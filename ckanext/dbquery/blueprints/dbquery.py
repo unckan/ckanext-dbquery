@@ -1,6 +1,5 @@
 from flask import Blueprint, request, flash
 import ckan.plugins.toolkit as toolkit
-from ckan.common import _
 
 dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/ckan-admin/dbquery')
 
@@ -9,14 +8,14 @@ def _display_search_results(results, query):
     """Helper function to display flash messages with search results"""
     if not results or (not results.get('tables') and not results.get('columns') and
                        not results.get('rows') and not results.get('objects')):
-        flash(_(f"No se encontraron resultados para: {query}"), 'info')
+        flash((f"No se encontraron resultados para: {query}"), 'info')
         return
 
-    flash(_("Consulta ejecutada con éxito"), 'success')
+    flash(("Consulta ejecutada con éxito"), 'success')
 
     # Mensajes más específicos sobre lo que se encontró
     if results.get('tables'):
-        flash(_(f"Se encontraron {len(results['tables'])} tablas que coinciden con '{query}'"), 'info')
+        flash((f"Se encontraron {len(results['tables'])} tablas que coinciden con '{query}'"), 'info')
 
     if results.get('columns'):
         column_info = []
@@ -25,17 +24,17 @@ def _display_search_results(results, query):
                 f"{col['column']} (en tabla {col['table']}, "
                 f"tipo {col.get('data_type', 'desconocido')})"
             )
-        flash(_(f"Se encontraron {len(results['columns'])} columnas relacionadas con '{query}': "
-                f"{', '.join(column_info)}"), 'info')
+        flash((f"Se encontraron {len(results['columns'])} columnas relacionadas con '{query}': "
+               f"{', '.join(column_info)}"), 'info')
 
     if results.get('rows'):
         tables_with_rows = [f"{row['table']}.{row['column']}" for row in results['rows']]
-        flash(_(f"Se encontraron coincidencias en {len(results['rows'])} tablas/columnas: "
-                f"{', '.join(tables_with_rows)}"), 'info')
+        flash((f"Se encontraron coincidencias en {len(results['rows'])} tablas/columnas: "
+               f"{', '.join(tables_with_rows)}"), 'info')
 
     if results.get('objects'):
         object_types = set(obj['type'] for obj in results['objects'])
-        flash(_(f"Se encontraron {len(results['objects'])} objetos de tipo: {', '.join(object_types)}"), 'info')
+        flash((f"Se encontraron {len(results['objects'])} objetos de tipo: {', '.join(object_types)}"), 'info')
 
 
 def _execute_search(query, object_type):
@@ -52,11 +51,11 @@ def _execute_search(query, object_type):
         # Llama a la acción custom_query
         return toolkit.get_action('custom_query')(context, data_dict)
     except toolkit.ValidationError as ve:
-        flash(_(f"Error de validación: {str(ve)}"), 'error')
+        flash((f"Error de validación: {str(ve)}"), 'error')
     except toolkit.NotAuthorized:
-        flash(_("No tiene permiso para ejecutar esta consulta."), 'error')
+        flash(("No tiene permiso para ejecutar esta consulta."), 'error')
     except Exception as e:
-        flash(_(f"Error al ejecutar la consulta: {str(e)}"), 'error')
+        flash((f"Error al ejecutar la consulta: {str(e)}"), 'error')
 
     return None
 
@@ -69,7 +68,7 @@ def index():
     """
     # Verificar que el usuario sea un administrador del sistema
     if not toolkit.c.userobj or not toolkit.c.userobj.sysadmin:
-        return toolkit.abort(403, _("Necesita ser administrador del sistema para administrar DBQuery"))
+        return toolkit.abort(403, ("Necesita ser administrador del sistema para administrar DBQuery"))
 
     results = None
 
@@ -93,7 +92,7 @@ def index():
             if results:
                 _display_search_results(results, q)
         else:
-            flash(_("Debe especificar una consulta válida."), 'error')
+            flash(("Debe especificar una consulta válida."), 'error')
 
     # Renderiza la plantilla con los resultados (si existen)
     extra_vars = {

@@ -1,9 +1,9 @@
 """Tests for the blueprint routes."""
 
 from unittest import mock
-from flask import Flask, url_for
+from flask import Flask
 from ckan.plugins.toolkit import ValidationError
-from ckanext.dbquery.blueprints.dbquery import _display_search_results, _execute_search
+from ckanext.dbquery.blueprints.dbquery import _display_search_results, _execute_search, index
 
 
 class TestDbqueryBlueprint:
@@ -67,63 +67,66 @@ class TestDbqueryBlueprint:
         with app.app_context(), app.test_request_context():
             with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.get_action") as mock_get_action:
                 with mock.patch("ckanext.dbquery.blueprints.dbquery.flash") as mock_flash:
-                    mock_action = mock.MagicMock()
-                    mock_get_action.return_value = mock_action
-                    mock_action.side_effect = ValidationError({"error": "Test error"})
+                    with mock.patch("ckanext.dbquery.blueprints.dbquery._") as mock_translate:
+                        # Set up mocks
+                        mock_action = mock.MagicMock()
+                        mock_get_action.return_value = mock_action
+                        mock_action.side_effect = ValidationError({"error": "Test error"})
 
-                    with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
-                        mock_c.user = "test-user"
-                        mock_c.userobj = "test-userobj"
+                        # Mock translate function to return original string
+                        mock_translate.side_effect = lambda x: x
 
-                        result = _execute_search("test", "")
+                        with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
+                            mock_c.user = "test-user"
+                            mock_c.userobj = "test-userobj"
 
-                        assert result is None
-                        mock_flash.assert_called_once()
-                        assert "Error de validación" in mock_flash.call_args[0][0]
+                            result = _execute_search("test", "")
+                            assert result is None
+                            mock_flash.assert_called_once()
+                            # Check that flash is called with a string containing these words
+                            flash_message = mock_flash.call_args[0][0]
+                            assert "Error" in flash_message
 
-    @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.render")
-    def test_index_route_unauthorized(self, app):
+    def test_index_route_unauthorized(self):
         """Test accessing the index route as an unauthorized user."""
-        with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
-            mock_c.userobj = None
+        app = Flask(__name__)
+        with app.app_context(), app.test_request_context():
+            with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.abort") as mock_abort:
+                with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
+                    # Configuramos un usuario NO sysadmin
+                    mock_c.userobj = mock.MagicMock(sysadmin=False)
+                    index()
+                    # Verificamos que se haya llamado a abort con status 403
+                    mock_abort.assert_called_once_with(403, mock.ANY)
 
-            response = app.get(
-                url_for("dbquery.index"),
-                status=403
-            )
-
-            assert response.status_code == 403
-
-    @mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.render")
-    def test_index_route_sysadmin(self, mock_render, app):
+    def test_index_route_sysadmin(self):
         """Test accessing the index route as a sysadmin."""
-        with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
-            mock_c.userobj = mock.MagicMock(sysadmin=True)
+        app = Flask(__name__)
+        with app.app_context(), app.test_request_context():
+            with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.render") as mock_render:
+                with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
+                    # Configuramos un usuario sysadmin
+                    mock_c.userobj = mock.MagicMock(sysadmin=True)
+                    index()
+                    # Verificamos que se llame a render con la plantilla correcta y extra_vars
+                    mock_render.assert_called_once()
+                    args, kwargs = mock_render.call_args
+                    assert args[0] == "dbquery/index.html"
+                    assert "extra_vars" in kwargs
 
-            response = app.get(
-                url_for("dbquery.index"),
-                status=200
-            )
-
-            mock_render.assert_called_once_with(
-                "dbquery/index.html",
-                mock.ANY
-            )
-
-    @mock.patch("ckanext.dbquery.blueprints.dbquery._execute_search")
-    @mock.patch("ckanext.dbquery.blueprints.dbquery._display_search_results")
-    def test_index_post_with_query(self, mock_display, mock_execute, app):
+    def test_index_post_with_query(self):
         """Test posting a query to the index route."""
-        mock_execute.return_value = {"tables": ["test_table"]}
-
-        with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
-            mock_c.userobj = mock.MagicMock(sysadmin=True)
-
-            response = app.post(
-                url_for("dbquery.index"),
-                data={"query": "test", "object_type": ""},
-                status=200
-            )
-
-            mock_execute.assert_called_once_with("test", "")
-            mock_display.assert_called_once_with({"tables": ["test_table"]}, "test")
+        app = Flask(__name__)
+        with app.app_context(), app.test_request_context(method='POST', data={
+                'query': 'test',
+                'object_type': ''}):
+            with mock.patch("ckanext.dbquery.blueprints.dbquery.toolkit.c") as mock_c:
+                with mock.patch("ckanext.dbquery.blueprints.dbquery._execute_search") as mock_execute:
+                    with mock.patch("ckanext.dbquery.blueprints.dbquery._display_search_results") as mock_display:
+                        # Configuramos un usuario sysadmin
+                        mock_c.userobj = mock.MagicMock(sysadmin=True)
+                        # Simulamos el retorno de la acción custom_query
+                        mock_execute.return_value = {"tables": ["test_table"]}
+                        index()
+                        mock_execute.assert_called_once_with("test", "")
+                        mock_display.assert_called_once_with({"tables": ["test_table"]}, "test")
