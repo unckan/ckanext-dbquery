@@ -169,8 +169,6 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     @staticmethod
     def _search_specific_objects(object_type, query, limit_rows):
         """Buscar objetos específicos según su tipo"""
-        objects_results = []
-
         # Mapa de tipos de objetos a sus tablas y columnas principales
         object_type_map = {
             "user": {
@@ -195,23 +193,26 @@ class DbqueryPlugin(plugins.SingletonPlugin):
             "package": {
                 "table": "package",
                 "id_column": "id",
-                "name_columns": ["name", "title", "notes"],
+                "name_columns": ["id", "name", "title", "notes"],  # Agregado "id" para buscar por ID del paquete
                 "display": "title"
             },
             "resource": {
                 "table": "resource",
                 "id_column": "id",
-                "name_columns": ["name", "description", "url"],
+                "name_columns": ["id", "name", "description", "url"],  # Agregado "id" para consistencia
                 "display": "name"
             }
         }
 
-        # Si el tipo de objeto está en nuestro mapa
+        # Si el tipo de objeto no está en nuestro mapa
         if object_type not in object_type_map:
             log.warning(f"Tipo de objeto no reconocido: {object_type}")
-            return objects_results
+            return []
 
+        # Obtener la configuración para este tipo de objeto
         obj_config = object_type_map[object_type]
+
+        # Ejecutar la búsqueda con la configuración
         return DbqueryPlugin._execute_object_search(obj_config, object_type, query, limit_rows)
 
     @staticmethod
