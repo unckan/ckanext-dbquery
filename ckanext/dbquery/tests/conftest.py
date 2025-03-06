@@ -58,8 +58,8 @@ def mock_query_results():
         ],
         "rows": [
             {
-                "table": "resource", 
-                "column": "id", 
+                "table": "resource",
+                "column": "id",
                 "display_path": "resource.id",
                 "matches": [
                     {"id": "abc-123"}
@@ -67,6 +67,7 @@ def mock_query_results():
             }
         ]
     }
+
 
 @pytest.fixture
 def create_test_data(clean_db):
