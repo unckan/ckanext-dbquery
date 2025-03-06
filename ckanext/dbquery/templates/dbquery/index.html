@@ -2,23 +2,81 @@
 
 {% block title %}DBQuery Admin{% endblock %}
 
-{% block primary_content %}
-{{ super() }}
-    <h1>DBQuery</h1>
-    <div class="module-content">
-      <form method="post">
-        <label for="query">{{ _('Search Parameter') }}</label>
-        <input type="text" name="query" id="query" required>
-        <button type="submit">{{ _('Search') }}</button>
-      </form>
-      {% if results is not none %}
-        <h2>{{ _('Results for') }} {{ query }}:</h2>
-        <ul>
-          {% for row in results %}
-            <li>{{ row }}</li>
-          {% endfor %}
-        </ul>
+{% block primary_content_inner %}
+  <h1>CKAN DB Query</h1>
+  
+  <form method="post" class="form-inline">
+    <div class="input-group">
+      <input type="text" class="form-control" name="query" placeholder="Ingrese texto para buscar en la base de datos..." 
+             value="{{ request.form.get('query', '') }}">
+      <span class="input-group-btn">
+        <button class="btn btn-default" type="submit">Buscar</button>
+      </span>
+    </div>
+  </form>
+  
+  {% if results %}
+    <div class="results-section">
+      <h3>Resultados de la búsqueda</h3>
+      
+      {% if results.tables %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4>Tablas encontradas ({{ results.tables|length }})</h4>
+          </div>
+          <div class="panel-body">
+            <ul>
+              {% for table in results.tables %}
+                <li>{{ table }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if results.columns %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4>Columnas encontradas ({{ results.columns|length }})</h4>
+          </div>
+          <div class="panel-body">
+            <ul>
+              {% for col in results.columns %}
+                <li>{{ col.table }}.{{ col.column }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if results.rows %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h4>Filas encontradas</h4>
+          </div>
+          <div class="panel-body">
+            {% for row_match in results.rows %}
+              <div class="table-match">
+                <h5>{{ row_match.table }}.{{ row_match.column }}</h5>
+                <table class="table table-striped table-bordered">
+                  <thead>
+                    <tr>
+                      <th>{{ row_match.column }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for match in row_match.matches %}
+                      <tr>
+                        <td>{{ match[row_match.column] }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
       {% endif %}
     </div>
-
+  {% endif %}
 {% endblock %}

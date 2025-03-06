@@ -1,8 +1,9 @@
 import logging
-import psycopg2
+import sqlalchemy
 
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckan.model import Session
 from ckanext.dbquery.blueprints.dbquery import dbquery_bp
 from ckanext.dbquery.actions import dbquery as dbquery_actions
 from ckanext.dbquery.auth import dbquery as dbquery_auth
@@ -21,41 +22,29 @@ def quote_identifier(identifier):
 
 
 def query_database(query, params=None):
-    """ Realiza una consulta a la base de datos y retorna los resultados """
-    # Obtén los parámetros de conexión desde la configuración (puedes definirlos en ckan.ini)
-    dbname = toolkit.config.get('dbquery.dbname', 'ckan_test')
-    user = toolkit.config.get('dbquery.user', 'ckan_default')
-    password = toolkit.config.get('dbquery.password', 'pass')
-    host = toolkit.config.get('dbquery.host', 'postgresql_uni')
-    port = toolkit.config.get('dbquery.port', '5432')
-
+    """ Realiza una consulta a la base de datos y retorna los resultados usando la sesión de CKAN"""
     try:
-        conn = psycopg2.connect(
-            dbname=dbname,
-            user=user,
-            password=password,
-            host=host,
-            port=port
-        )
-        cur = conn.cursor()
+        # Usar la sesión SQLAlchemy de CKAN en lugar de crear una nueva conexión
+        engine = Session.get_bind()
+        conn = engine.connect()
 
-        # Ejecutar la consulta con parámetros seguros
+        # Ejecutar la consulta de forma segura
         log.info("Ejecutando consulta: %s", query)
+        result = conn.execute(sqlalchemy.text(query), params or {})
 
-        cur.execute(query, params or {})
-        rows = cur.fetchall()
+        # Obtener nombres de columnas y resultados
+        rows = result.fetchall()
+        colnames = result.keys()
 
-        # Obtener nombres de columnas
-        colnames = [desc[0] for desc in cur.description]
+        # Construir lista de diccionarios con los resultados
+        results = [dict(zip(colnames, row)) for row in rows]
 
-        cur.close()
         conn.close()
+        return results
 
     except Exception as e:
         log.error("Error al realizar la consulta a la base de datos: %s", e)
         raise
-
-    return [dict(zip(colnames, row)) for row in rows]
 
 
 def column_exists(table_name, column_name):
@@ -64,10 +53,10 @@ def column_exists(table_name, column_name):
         SELECT column_name
         FROM information_schema.columns
         WHERE table_schema = 'public'
-        AND table_name = %s
-        AND LOWER(column_name) = LOWER(%s)
+        AND table_name = :table_name
+        AND LOWER(column_name) = LOWER(:column_name)
     """
-    result = query_database(query, (table_name, column_name))
+    result = query_database(query, {"table_name": table_name, "column_name": column_name})
     return bool(result)
 
 
@@ -133,44 +122,39 @@ class DbqueryPlugin(plugins.SingletonPlugin):
 
         data_dict:
         - "query": texto de búsqueda (obligatorio)
-        - "limit_rows": límite de filas a mostrar por tabla-columna (opcional, default=5)
+        - "limit_rows": límite de filas a mostrar por tabla-columna (opcional, default=50)
 
         Retorna un diccionario con:
         {
             "tables": [...],
             "columns": [...],
-            "rows": [
-            {
-                "table": "nombre_tabla",
-                "column": "nombre_columna",
-                "matches": [ ... filas encontradas ... ]
-            },
-            ...
-            ]
+            "rows": [...]
         }
         """
+        # Verificar autorización
+        toolkit.check_access('dbquery_custom_query', context, data_dict)
+
         query = data_dict.get('query')
         if not query:
-            raise toolkit.ValidationError("Debe proporcionar 'query' en data_dict.")
+            raise toolkit.ValidationError({"query": "Debe proporcionar un texto de búsqueda."})
 
         limit_rows = data_dict.get('limit_rows', 50)
 
         # 1) Buscar tablas que coincidan con el texto
         query_tables = """
             SELECT table_name FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_name ILIKE %s
+            WHERE table_schema = 'public' AND table_name ILIKE :query
         """
-        tables_found = query_database(query_tables, (f"%{query}%",))
+        tables_found = query_database(query_tables, {"query": f"%{query}%"})
 
         # 2) Buscar columnas que coincidan con el texto
         query_columns = """
             SELECT table_name, column_name FROM information_schema.columns
-            WHERE table_schema = 'public' AND column_name ILIKE %s
+            WHERE table_schema = 'public' AND column_name ILIKE :query
         """
-        columns_found = query_database(query_columns, (f"%{query}%",))
+        columns_found = query_database(query_columns, {"query": f"%{query}%"})
 
         # 3) Buscar filas que coincidan en cualquier tabla/columna de tipo texto
-        #    3.1) Primero obtener todas las columnas de tipo texto
         query_text_columns = """
             SELECT table_name, column_name FROM information_schema.columns
             WHERE table_schema = 'public' AND data_type IN ('character varying', 'text')
@@ -184,12 +168,12 @@ class DbqueryPlugin(plugins.SingletonPlugin):
 
             query_sql = f"""
                 SELECT {column_name} FROM {table_name}
-                WHERE {column_name} ILIKE %s
-                LIMIT %s
+                WHERE {column_name} ILIKE :query
+                LIMIT :limit_rows
             """
 
             try:
-                rows = query_database(query_sql, (f"%{query}%", limit_rows))
+                rows = query_database(query_sql, {"query": f"%{query}%", "limit_rows": limit_rows})
             except Exception as e:
                 log.warning(f"Error al consultar {table_name}.{column_name}: {e}")
                 rows = []

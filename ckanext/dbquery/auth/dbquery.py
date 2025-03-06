@@ -1,12 +1,15 @@
-from ckan.logic import NotAuthorized
+import ckan.plugins.toolkit as toolkit
 
 
 def dbquery_execute(context, data_dict):
     """
     Verifica si el usuario puede ejecutar consultas DBQuery.
+    Solo sysadmins pueden ejecutar consultas.
     """
-    user = context.get('user')
-    if user == 'admin':  # Solo el usuario 'admin' puede ejecutar
+    # Check if user is a sysadmin
+    user_obj = context.get('auth_user_obj')
+
+    if user_obj and user_obj.sysadmin:
         return {'success': True}
     else:
-        raise NotAuthorized("No tiene permiso para ejecutar esta acción.")
+        return {'success': False, 'msg': toolkit._('Necesita ser administrador del sistema para ejecutar consultas.')}
