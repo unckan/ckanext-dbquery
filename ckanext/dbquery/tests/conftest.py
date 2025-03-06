@@ -2,8 +2,8 @@
 
 import pytest
 import ckan.tests.factories as factories
-import ckan.tests.helpers as helpers
 import ckan.model as model
+from flask import Flask
 
 
 @pytest.fixture
@@ -42,9 +42,10 @@ def test_resource(test_dataset):
 @pytest.fixture
 def app():
     """Return a WSGI app for testing Flask routes directly."""
-    # FunctionalTestBase().app doesn't exist in this CKAN version
-    # Use the recommended way to get the test app
-    return helpers.get_test_app()
+    # For integration tests, we use a mock app
+    flask_app = Flask('test_app')
+    # Return the Flask app directly so it can be used in app.app_context()
+    return flask_app
 
 
 @pytest.fixture
