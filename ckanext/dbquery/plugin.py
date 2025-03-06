@@ -119,16 +119,19 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         1) Tablas cuyo nombre coincida con el texto.
         2) Columnas cuyo nombre coincida con el texto.
         3) Filas de cualquier tabla y columna (de tipo texto) que coincida con el texto.
+        4) Objetos específicos por tipo (opcional)
 
         data_dict:
         - "query": texto de búsqueda (obligatorio)
         - "limit_rows": límite de filas a mostrar por tabla-columna (opcional, default=50)
+        - "object_type": tipo de objeto específico a buscar (opcional, ej: "user", "group", "organization", "package")
 
         Retorna un diccionario con:
         {
             "tables": [...],
             "columns": [...],
-            "rows": [...]
+            "rows": [...],
+            "objects": [...] # Si se proporciona object_type
         }
         """
         # Verificar autorización
@@ -139,6 +142,13 @@ class DbqueryPlugin(plugins.SingletonPlugin):
             raise toolkit.ValidationError({"query": "Debe proporcionar un texto de búsqueda."})
 
         limit_rows = data_dict.get('limit_rows', 50)
+        object_type = data_dict.get('object_type')
+
+        results = {
+            "tables": [],
+            "columns": [],
+            "rows": []
+        }
 
         # 1) Buscar tablas que coincidan con el texto
         query_tables = """
@@ -185,8 +195,104 @@ class DbqueryPlugin(plugins.SingletonPlugin):
                     "matches": rows
                 })
 
-        return {
-            "tables": [t["table_name"] for t in tables_found],
-            "columns": [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found],
-            "rows": row_matches
-        }
+        results["tables"] = [t["table_name"] for t in tables_found]
+        results["columns"] = [{"table": c["table_name"], "column": c["column_name"]} for c in columns_found]
+        results["rows"] = row_matches
+
+        # 4) Búsqueda específica por tipo de objeto
+        if object_type:
+            results["objects"] = []
+
+            # Mapa de tipos de objetos a sus tablas y columnas principales
+            object_type_map = {
+                "user": {
+                    "table": "user",
+                    "id_column": "id",
+                    "name_columns": ["name", "fullname", "email"],
+                    "display": "name"
+                },
+                "group": {
+                    "table": "group",
+                    "id_column": "id",
+                    "name_columns": ["name", "title", "description"],
+                    "display": "title"
+                },
+                "organization": {
+                    "table": "group",
+                    "id_column": "id",
+                    "name_columns": ["name", "title", "description"],
+                    "display": "title",
+                    "filter": {"is_organization": True}
+                },
+                "package": {
+                    "table": "package",
+                    "id_column": "id",
+                    "name_columns": ["name", "title", "notes"],
+                    "display": "title"
+                },
+                "resource": {
+                    "table": "resource",
+                    "id_column": "id",
+                    "name_columns": ["name", "description", "url"],
+                    "display": "name"
+                }
+            }
+
+            # Si el tipo de objeto está en nuestro mapa
+            if object_type in object_type_map:
+                obj_config = object_type_map[object_type]
+                table = obj_config["table"]
+                id_column = obj_config["id_column"]
+                name_columns = obj_config["name_columns"]
+                display_column = obj_config["display"]
+
+                # Construir la condición WHERE para los nombres de columnas
+                where_conditions = []
+                for col in name_columns:
+                    where_conditions.append(f"{quote_identifier(col)} ILIKE :query")
+
+                where_clause = " OR ".join(where_conditions)
+
+                # Agregar filtros adicionales si existen
+                additional_filters = ""
+                filter_params = {"query": f"%{query}%"}
+
+                if "filter" in obj_config:
+                    for key, value in obj_config["filter"].items():
+                        additional_filters += f" AND {quote_identifier(key)} = :filter_{key}"
+                        filter_params[f"filter_{key}"] = value
+
+                # Construir la consulta SQL
+                query_sql = f"""
+                    SELECT {quote_identifier(id_column)}, {', '.join(quote_identifier(col) for col in name_columns)}
+                    FROM {quote_identifier(table)}
+                    WHERE ({where_clause}) {additional_filters}
+                    AND state = 'active'
+                    LIMIT :limit
+                """
+
+                try:
+                    # Ejecutar la consulta
+                    filter_params["limit"] = limit_rows
+                    objects_found = query_database(query_sql, filter_params)
+
+                    # Formatear los resultados para mostrar
+                    for obj in objects_found:
+                        obj_display = {
+                            "id": obj[id_column],
+                            "type": object_type,
+                            "display_name": obj[display_column]
+                        }
+                        # Agregar todas las columnas encontradas
+                        for col in name_columns:
+                            if col in obj and obj[col]:
+                                obj_display[col] = obj[col]
+
+                        results["objects"].append(obj_display)
+
+                except Exception as e:
+                    log.warning(f"Error al buscar objetos de tipo {object_type}: {e}")
+            else:
+                log.warning(f"Tipo de objeto no reconocido: {object_type}")
+
+        return results

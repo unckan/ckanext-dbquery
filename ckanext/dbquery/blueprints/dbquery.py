@@ -17,9 +17,20 @@ def index():
 
     results = None
 
+    # Lista de tipos de objetos disponibles para la búsqueda
+    available_object_types = [
+        {'value': '', 'text': '-- Cualquier objeto --'},
+        {'value': 'user', 'text': 'Usuario'},
+        {'value': 'group', 'text': 'Grupo'},
+        {'value': 'organization', 'text': 'Organización'},
+        {'value': 'package', 'text': 'Conjunto de datos'},
+        {'value': 'resource', 'text': 'Recurso'}
+    ]
+
     if request.method == 'POST':
         # Obtén el valor ingresado por el usuario
         q = request.form.get('query', '').strip()
+        object_type = request.form.get('object_type', '').strip()
 
         if q:
             try:
@@ -27,10 +38,15 @@ def index():
                 context = {'user': toolkit.c.user, 'auth_user_obj': toolkit.c.userobj}
                 data_dict = {'query': q}
 
+                # Si se ha seleccionado un tipo de objeto, lo agregamos al data_dict
+                if object_type:
+                    data_dict['object_type'] = object_type
+
                 # Llama a la acción custom_query
                 results = toolkit.get_action('custom_query')(context, data_dict)
 
-                if not results or (not results['tables'] and not results['columns'] and not results['rows']):
+                if not results or (not results.get('tables') and not results.get('columns') and
+                                   not results.get('rows') and not results.get('objects')):
                     flash(_(f"No se encontraron resultados para: {q}"), 'info')
                 else:
                     flash(_("Consulta ejecutada con éxito"), 'success')
@@ -47,5 +63,8 @@ def index():
             flash(_("Debe especificar una consulta válida."), 'error')
 
     # Renderiza la plantilla con los resultados (si existen)
-    extra_vars = {'results': results}
+    extra_vars = {
+        'results': results,
+        'object_types': available_object_types
+    }
     return toolkit.render('dbquery/index.html', extra_vars=extra_vars)
