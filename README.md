@@ -20,14 +20,6 @@ Compatibility with core CKAN versions:
 | 2.10            | not tested    |
 | 2.11            | In progress   |
 
-Suggested values:
-
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
-
-
 ## Installation
 
 **TODO:** Add any additional install steps to the list below.
