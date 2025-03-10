@@ -1,29 +1,34 @@
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint
 from ckan.plugins import toolkit
 
-dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/dbquery')
+
+dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/ckan-admin/db-query')
 
 
-@dbquery_bp.route('/index', methods=['GET', 'POST'], endpoint='index')
+@dbquery_bp.route('/', methods=['GET', 'POST'])
 def index():
     """
-    Vista de administración para la extensión DBQuery.
-    Aquí puedes, por ejemplo, permitir que el usuario ingrese el nombre
-    de una tabla para realizar la consulta.
+    Run a custom query on the database
     """
-    results = None
-    if request.method == 'POST':
-        table = request.form.get('table')
-        if table:
-            try:
-                # Ejecuta la acción 'dbquery_execute'
-                context = {'user': toolkit.c.user}
-                data_dict = {'table': table}
+    # Verificar que el usuario sea un administrador del sistema
+    if not toolkit.c.userobj or not toolkit.c.userobj.sysadmin:
+        return toolkit.abort(403)
 
-                # Llama a la acción custom_query para obtener los datos
-                results = toolkit.get_action('custom_query')(context, data_dict)
-            except Exception as e:
-                flash("Error en la consulta: %s" % e, 'error')
-        else:
-            flash("Debe especificar el nombre de la tabla", 'error')
-    return render_template('dbquery/index.html', results=results)
+    query = None
+    result = None
+    request = toolkit.request
+
+    if request.method == 'POST':
+        form = request.form
+        query = form.get('query')
+        if query:
+            data_dict = {'query': query}
+            result = toolkit.get_action('query_database')(None, data_dict)
+
+    # Display results if any
+    extra_vars = {
+        'result': result,
+        'query': query,
+    }
+
+    return toolkit.render('dbquery/index.html', extra_vars=extra_vars)

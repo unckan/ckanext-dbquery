@@ -1,23 +1,45 @@
+import logging
+from sqlalchemy.sql.expression import text
+from ckan import model
+from ckan.plugins import toolkit
 
-import ckan.plugins.toolkit as toolkit
-from ckan.logic import NotAuthorized
+
+log = logging.getLogger(__name__)
 
 
-def dbquery_execute(context, data_dict):
-    """
-    Ejecuta una consulta básica en la tabla especificada.
-    """
-    session = context['session']
+def query_database(context, data_dict):
+    """ Realiza una consulta a la base de datos y retorna los resultados usando la sesión de CKAN"""
 
-    # Verificar permisos
-    if not context.get('ignore_auth'):
-        raise NotAuthorized("No tiene permiso para ejecutar esta consulta.")
+    toolkit.check_access('query_database', context, data_dict)
 
-    table_name = data_dict.get('table')
-    if not table_name:
-        raise toolkit.ValidationError("Debe especificar una tabla.")
+    query = data_dict.get('query')
+    # Usar la sesión SQLAlchemy de CKAN en lugar de crear una nueva conexión
+    engine = model.meta.engine
 
-    # Ejecutar consulta simple
-    query = f"SELECT * FROM {table_name} LIMIT 10;"
-    result = session.execute(query)
-    return [dict(row) for row in result]
+    try:
+        text_sql = text(query)
+        result = engine.execute(text_sql)
+    except Exception as e:
+        log.critical(f"Error al ejecutar la consulta {query}: {e}")
+        raise toolkit.ValidationError({"query": f"Invalid Query {e}"})
+
+    # Check if it's a SELECT query that returns rows
+    has_results = result.returns_rows
+    # Delete or update queries don't return results
+    if has_results:
+        rows = result.fetchall()
+        colnames = result.keys()
+        message = f"Query returned {len(rows)} rows"
+    else:
+        rows = []
+        colnames = []
+        message = f"Query affected {result.rowcount} rows"
+
+    resp = {
+        "rows": rows,
+        "colnames": colnames,
+        "result_obj": result,
+        "message": message,
+    }
+
+    return resp
