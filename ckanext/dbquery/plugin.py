@@ -3,7 +3,7 @@ import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.dbquery.blueprints.dbquery import dbquery_bp
-from ckanext.dbquery import actions, auth, model
+from ckanext.dbquery import actions, auth
 
 log = logging.getLogger(__name__)
 
@@ -38,11 +38,6 @@ class DbqueryPlugin(plugins.SingletonPlugin):
             "query_database": auth.query_database,
         }
 
-    def before_map(self, map):
-        # Initialize the model
-        model.setup()
-        return map
-
+    # IConfigurable
     def configure(self, config):
-        # Initialize the model
-        model.setup()
+        pass
