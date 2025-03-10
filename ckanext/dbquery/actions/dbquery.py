@@ -26,7 +26,7 @@ def query_database(context, data_dict):
     # Check if it's a SELECT query that returns rows
     has_results = result.returns_rows
     # Delete or update queries don't return results
-    if has_results is None:
+    if has_results:
         rows = result.fetchall()
         colnames = result.keys()
         message = f"Query returned {len(rows)} rows"
@@ -38,7 +38,7 @@ def query_database(context, data_dict):
     resp = {
         "rows": rows,
         "colnames": colnames,
-        "result": result,
+        "result_obj": result,
         "message": message,
     }
 

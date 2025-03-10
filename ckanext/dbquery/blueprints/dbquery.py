@@ -15,7 +15,7 @@ def index():
         return toolkit.abort(403)
 
     query = None
-    results = None
+    result = None
     request = toolkit.request
 
     if request.method == 'POST':
@@ -23,11 +23,11 @@ def index():
         query = form.get('query')
         if query:
             data_dict = {'query': query}
-            results = toolkit.get_action('custom_query')(None, data_dict)
+            result = toolkit.get_action('query_database')(None, data_dict)
 
     # Display results if any
     extra_vars = {
-        'results': results,
+        'result': result,
         'query': query,
     }
 
