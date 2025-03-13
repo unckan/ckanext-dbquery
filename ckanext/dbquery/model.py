@@ -25,7 +25,7 @@ class DBQueryExecuted(toolkit.BaseModel):
             'user_id': self.user_id,
             'timestamp': self.timestamp.isoformat(),
         }
-    
+
     def save(self):
         model.Session.add(self)
         model.Session.commit()

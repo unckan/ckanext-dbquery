@@ -1,7 +1,7 @@
 """ create dbquery execute table
 
 Revision ID: b1fa0dbfb105
-Revises: 
+Revises:
 Create Date: 2025-03-10 18:11:50.536615
 
 """
@@ -27,6 +27,7 @@ def upgrade() -> None:
         sa.Column('timestamp', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
+
 
 def downgrade() -> None:
     op.drop_table('dbquery_executed')
