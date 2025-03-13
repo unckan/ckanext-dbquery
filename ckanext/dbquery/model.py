@@ -31,3 +31,10 @@ class DBQueryExecuted(toolkit.BaseModel):
         model.Session.commit()
         model.Session.refresh(self)
         return self
+
+    @classmethod
+    def get_all_ordered_by_timestamp_desc(cls):
+        """
+        Return all executed queries ordered by timestamp descending
+        """
+        return model.Session.query(cls).order_by(cls.timestamp.desc()).all()
