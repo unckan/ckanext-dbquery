@@ -11,7 +11,7 @@
 {% block primary_content_inner %}
   <h1>CKAN DB Query</h1>
   
-  <form method="post" class="form">
+  <form method="post" class="form" id="query-form">
     {{ h.csrf_input() }}
     <div class="row">
         <div class="col-md-12">
@@ -23,6 +23,8 @@
         </div>
     </div>
     <button class="btn btn-primary" type="submit">Run query</button>
+    <button class="btn btn-danger" type="button" id="reset-query-btn" 
+            data-confirm="{{ _('Are you sure you want to clear the query?') }}">Reset</button>
   </form>
   
   {% if result %}
@@ -51,4 +53,29 @@
       </div>
     </div>
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var resetBtn = document.getElementById('reset-query-btn');
+      var queryTextarea = document.getElementById('query');
+      
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function(e) {
+          if (confirm(this.dataset.confirm)) {
+            // Force clear the textarea content
+            queryTextarea.value = '';
+            
+            // Focus on the textarea
+            queryTextarea.focus();
+            
+            // If you want to reload the page with a clean state
+            // window.location.href = window.location.pathname;
+          }
+        });
+      }
+    });
+  </script>
 {% endblock %}
