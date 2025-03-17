@@ -1,3 +1,3 @@
 # flake8: noqa: F401
 
-from ckanext.dbquery.actions.dbquery import query_database
+from ckanext.dbquery.actions.dbquery import query_database, dbquery_executed_list
