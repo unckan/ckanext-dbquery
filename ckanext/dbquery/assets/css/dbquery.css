@@ -27,3 +27,15 @@
 .table-responsive-wrapper::-webkit-scrollbar-thumb:hover {
     background: #888;
 }
+
+.query-box {
+    width: 100%;
+    min-height: 150px;
+    max-height: 500px;
+    resize: both;
+    font-family: monospace;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}

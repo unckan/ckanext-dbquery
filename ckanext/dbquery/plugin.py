@@ -13,6 +13,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IBlueprint)
+    plugins.implements(plugins.ITemplateHelpers)
 
     # IConfigurer
 
@@ -35,4 +36,10 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     def get_auth_functions(self):
         return {
             "query_database": auth.query_database,
+        }
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        return {
+            'dbquery_show_nav_link': lambda: True,
         }
