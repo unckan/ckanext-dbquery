@@ -14,15 +14,13 @@
   <form method="post" class="form">
     {{ h.csrf_input() }}
     <div class="row">
-      <div class="col-md-12">
-        <div class="form-group">
-          <label for="query">SQL Query</label>
-          <input type="text" class="form-control" id="query" name="query" 
-                 placeholder="Insert a valid SQL query" 
-                 value="{{ query|default('') }}">
+        <div class="col-md-12">
+            <div class="form-group">
+                <label for="query">SQL Query</label>
+                <textarea class="form-control query-box" id="query" name="query" 
+                          placeholder="Insert a valid SQL query">{{ query }}</textarea>
+            </div>
         </div>
-      </div>
-
     </div>
     <button class="btn btn-primary" type="submit">Run query</button>
   </form>
