@@ -35,7 +35,7 @@
               <td>{{ query.id }}</td>
               <td>{{ query.user_id }}</td>
               <td><pre class="query-preview">{{ query.query }}</pre></td>
-              <td>{{ h.render_datetime(query.timestamp) }}</td>
+              <td>{{ h.render_datetime(query.timestamp, date_format="%Y-%m-%d %H:%M:%S") }}</td>
               <td>
                 <a href="{{ h.url_for('dbquery.index') }}?load_query={{ query.id }}" class="btn btn-sm btn-primary">
                   <i class="fa fa-edit"></i> {{ _('Load') }}
