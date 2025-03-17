@@ -57,7 +57,10 @@
 
 {% block secondary_content %}
   <h1 class="page-heading">{{ _('DB Query Tools') }}</h1>
-  
+  <hr>
+  <p>{{ _('DBQuery is a CKAN extension to allow sysadmin users to run database queries.') }}</p>
+  <hr>
+
   <div class="mb-3">
     <a href="{{ h.url_for('dbquery.history') }}" class="btn btn-primary btn-block">
       <i class="fa fa-history"></i> {{ _('Show Executed Queries') }}
