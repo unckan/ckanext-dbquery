@@ -13,7 +13,6 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IBlueprint)
-    plugins.implements(plugins.IConfigurable)
 
     # IConfigurer
 
@@ -37,7 +36,3 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         return {
             "query_database": auth.query_database,
         }
-
-    # IConfigurable
-    def configure(self, config):
-        pass
