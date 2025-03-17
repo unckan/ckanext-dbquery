@@ -18,7 +18,7 @@
             <div class="form-group">
                 <label for="query">SQL Query</label>
                 <textarea class="form-control query-box" id="query" name="query" 
-                          placeholder="Insert a valid SQL query">{{ query }}</textarea>
+                          placeholder="Insert a valid SQL query">{{ query if query else '' }}</textarea>
             </div>
         </div>
     </div>
