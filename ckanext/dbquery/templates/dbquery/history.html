@@ -26,7 +26,6 @@
             <th>{{ _('User') }}</th>
             <th>{{ _('Query') }}</th>
             <th>{{ _('Timestamp') }}</th>
-            <th>{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -36,11 +35,6 @@
               <td>{{ query.user_id }}</td>
               <td><pre class="query-preview">{{ query.query }}</pre></td>
               <td>{{ h.render_datetime(query.timestamp, date_format="%Y-%m-%d %H:%M:%S") }}</td>
-              <td>
-                <a href="{{ h.url_for('dbquery.index') }}?load_query={{ query.id }}" class="btn btn-sm btn-primary">
-                  <i class="fa fa-edit"></i> {{ _('Load') }}
-                </a>
-              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -49,20 +43,4 @@
   {% else %}
     <p>{{ _('No executed queries found.') }}</p>
   {% endif %}
-{% endblock %}
-
-{% block secondary_content %}
-  <h2 class="page-heading">{{ _('Filter Options') }}</h2>
-  <form method="get" class="form">
-    <div class="form-group">
-      <label for="user_filter">{{ _('Filter by User') }}</label>
-      <input type="text" id="user_filter" name="user" class="form-control" value="{{ request.args.get('user', '') }}">
-    </div>
-    <div class="form-group">
-      <label for="date_filter">{{ _('Filter by Date') }}</label>
-      <input type="date" id="date_filter" name="date" class="form-control" value="{{ request.args.get('date', '') }}">
-    </div>
-    <button type="submit" class="btn btn-primary">{{ _('Apply Filter') }}</button>
-    <a href="{{ h.url_for('dbquery.history') }}" class="btn btn-default">{{ _('Clear') }}</a>
-  </form>
 {% endblock %}

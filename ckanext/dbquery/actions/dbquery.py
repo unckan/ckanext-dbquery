@@ -1,5 +1,4 @@
 import logging
-import datetime
 from ckanext.dbquery.model import DBQueryExecuted
 from sqlalchemy.sql.expression import text
 from ckan import model
@@ -38,12 +37,12 @@ def query_database(context, data_dict):
         message = f"Query affected {result.rowcount} rows"
 
     # Save executed query
-    if context.get('user'):
-        executed = DBQueryExecuted(
-            query=query,
-            user_id=context.get('user')
-        )
-        executed.save()
+    user = context['auth_user_obj']
+    executed = DBQueryExecuted(
+        query=query,
+        user_id=user.id
+    )
+    executed.save()
 
     resp = {
         "rows": rows,
@@ -63,25 +62,11 @@ def dbquery_executed_list(context, data_dict):
     # Check if user is authorized
     toolkit.check_access('query_database', context, data_dict)
 
-    # Get filter parameters
-    user_filter = data_dict.get('user')
-    date_filter = data_dict.get('date')
-    limit = data_dict.get('limit')
-
     # Get all executed queries
-    queries = DBQueryExecuted.get_all_ordered_by_timestamp_desc()
+    queries = DBQueryExecuted.get_queries()
 
-    # Apply filters if provided
-    if user_filter:
-        queries = [q for q in queries if user_filter.lower() in q.user_id.lower()]
-
-    if date_filter:
-        date_obj = datetime.datetime.strptime(date_filter, '%Y-%m-%d').date()
-        queries = [q for q in queries if q.timestamp.date() == date_obj]
-
-    # Apply limit if provided
-    if limit and isinstance(limit, int):
-        queries = queries[:limit]
+    # Convert to dictionaries
+    result = [query.dictize() for query in queries]
 
     # Convert to dictionaries
     result = [query.dictize() for query in queries]

@@ -42,5 +42,5 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'dbquery_show_nav_link': lambda: True,
+            "dbquery_get_recent_queries": actions.dbquery_executed_list,
         }
