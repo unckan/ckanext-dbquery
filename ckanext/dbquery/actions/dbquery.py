@@ -63,10 +63,7 @@ def dbquery_executed_list(context, data_dict):
     toolkit.check_access('query_database', context, data_dict)
 
     # Get all executed queries
-    queries = DBQueryExecuted.get_queries()
-
-    # Convert to dictionaries
-    result = [query.dictize() for query in queries]
+    queries = model.Session.query(DBQueryExecuted).order_by(DBQueryExecuted.timestamp.desc()).all()
 
     # Convert to dictionaries
     result = [query.dictize() for query in queries]

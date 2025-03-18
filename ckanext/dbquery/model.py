@@ -33,8 +33,14 @@ class DBQueryExecuted(toolkit.BaseModel):
         return self
 
     @classmethod
-    def get_all_ordered_by_timestamp_desc(cls):
+    def get_queries(user, date, limit=10):
         """
-        Return all executed queries ordered by timestamp descending
+        Return a list of executed queries filtered by user and date
         """
-        return model.Session.query(cls).order_by(cls.timestamp.desc()).all()
+        query = model.Session.query(DBQueryExecuted)
+        if user:
+            query = query.filter_by(user_id=user)
+        if date:
+            query = query.filter_by(timestamp=date)
+        query = query.order_by(DBQueryExecuted.timestamp.desc())
+        return query.limit(limit).all()
