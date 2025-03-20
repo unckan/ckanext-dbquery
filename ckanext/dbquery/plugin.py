@@ -38,9 +38,3 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         return {
             "query_database": auth.query_database,
         }
-
-    # ITemplateHelpers
-    def get_helpers(self):
-        return {
-            "dbquery_get_recent_queries": actions.dbquery_executed_list,
-        }
