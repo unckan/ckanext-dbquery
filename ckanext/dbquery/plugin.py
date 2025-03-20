@@ -38,3 +38,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         return {
             "query_database": auth.query_database,
         }
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        return {}
