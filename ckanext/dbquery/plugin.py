@@ -44,3 +44,5 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         return {
             "dbquery_get_recent_queries": actions.dbquery_executed_list,
         }
+
+##### pruebas
