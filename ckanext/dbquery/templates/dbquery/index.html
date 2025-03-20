@@ -61,12 +61,20 @@
   <p>{{ _('DBQuery is a CKAN extension to allow sysadmin users to run database queries.') }}</p>
   <hr>
 
-  <div class="mb-3">
-    <a href="{{ h.url_for('dbquery.history') }}" class="btn btn-primary btn-block">
-      <i class="fa fa-history"></i> {{ _('Show Executed Queries') }}
-    </a>
-  </div>
+  {{ super() }}
 
+  {% if h.check_access('sysadmin') %}
+    <div class="module module-narrow module-shallow">
+      <h2 class="module-heading"><i class="fa fa-database"></i> {{ _('Query History') }}</h2>
+      <div class="module-content">
+        <p>
+          <a class="btn btn-primary" href="{{ h.url_for('dbquery.history') }}">
+            <i class="fa fa-list"></i> {{ _('Show executed queries') }}
+          </a>
+        </p>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}

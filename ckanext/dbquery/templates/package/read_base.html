@@ -2,17 +2,4 @@
 
 {% block secondary_content %}
   {{ super() }}
-  
-  {% if h.check_access('sysadmin') %}
-    <div class="module module-narrow module-shallow">
-      <h2 class="module-heading"><i class="fa fa-database"></i> {{ _('Query History') }}</h2>
-      <div class="module-content">
-        <p>
-          <a class="btn btn-primary" href="{{ h.url_for('dbquery.history') }}">
-            <i class="fa fa-list"></i> {{ _('Show executed queries') }}
-          </a>
-        </p>
-      </div>
-    </div>
-  {% endif %}
 {% endblock %}
