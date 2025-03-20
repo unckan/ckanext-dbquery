@@ -27,7 +27,7 @@ def index():
             result = toolkit.get_action('query_database')(None, data_dict)
 
     # Get recent queries for sidebar
-    queries = toolkit.get_action('dbquery_executed_list')({}, {'limit': 5})
+    queries = toolkit.get_action('dbquery_executed_list')({}, {})
 
     # Display results if any
     extra_vars = {
