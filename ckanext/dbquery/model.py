@@ -31,3 +31,16 @@ class DBQueryExecuted(toolkit.BaseModel):
         model.Session.commit()
         model.Session.refresh(self)
         return self
+
+    @classmethod
+    def get_queries(user, date, limit=10):
+        """
+        Return a list of executed queries filtered by user and date
+        """
+        query = model.Session.query(DBQueryExecuted)
+        if user:
+            query = query.filter_by(user_id=user)
+        if date:
+            query = query.filter_by(timestamp=date)
+        query = query.order_by(DBQueryExecuted.timestamp.desc())
+        return query.limit(limit).all()

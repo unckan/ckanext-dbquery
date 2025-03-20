@@ -29,6 +29,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     def get_actions(self):
         return {
             "query_database": actions.query_database,
+            "dbquery_executed_list": actions.dbquery_executed_list,
         }
 
     # IAuthFunctions

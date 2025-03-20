@@ -1,4 +1,5 @@
 import logging
+from ckanext.dbquery.model import DBQueryExecuted
 from sqlalchemy.sql.expression import text
 from ckan import model
 from ckan.plugins import toolkit
@@ -35,6 +36,14 @@ def query_database(context, data_dict):
         colnames = []
         message = f"Query affected {result.rowcount} rows"
 
+    # Save executed query
+    user = context['auth_user_obj']
+    executed = DBQueryExecuted(
+        query=query,
+        user_id=user.id
+    )
+    executed.save()
+
     resp = {
         "rows": rows,
         "colnames": colnames,
@@ -43,3 +52,20 @@ def query_database(context, data_dict):
     }
 
     return resp
+
+
+@toolkit.side_effect_free
+def dbquery_executed_list(context, data_dict):
+    """
+    Return a list of all executed queries ordered by timestamp descending
+    """
+    # Check if user is authorized
+    toolkit.check_access('query_database', context, data_dict)
+
+    # Get all executed queries
+    queries = model.Session.query(DBQueryExecuted).order_by(DBQueryExecuted.timestamp.desc()).all()
+
+    # Convert to dictionaries
+    result = [query.dictize() for query in queries]
+
+    return result
