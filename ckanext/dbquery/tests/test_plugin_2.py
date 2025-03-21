@@ -22,25 +22,25 @@ class TestDbqueryPlugin:
         """Test that get_blueprint returns a blueprint."""
         plugin = DbqueryPlugin()
         blueprint = plugin.get_blueprint()
-        
+
         assert blueprint is not None
         assert blueprint.name == 'dbquery'
         assert blueprint.url_prefix == '/ckan-admin/db-query'
-    
+
     def test_get_actions(self):
         """Test that get_actions returns the expected actions."""
         plugin = DbqueryPlugin()
         actions = plugin.get_actions()
-        
+
         assert 'query_database' in actions
         assert 'dbquery_executed_list' in actions
         assert callable(actions['query_database'])
         assert callable(actions['dbquery_executed_list'])
-    
+
     def test_get_auth_functions(self):
         """Test that get_auth_functions returns the expected auth functions."""
         plugin = DbqueryPlugin()
         auth_functions = plugin.get_auth_functions()
-        
+
         assert 'query_database' in auth_functions
         assert callable(auth_functions['query_database'])
