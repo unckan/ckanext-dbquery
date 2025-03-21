@@ -1,14 +1,11 @@
-import os
 import pytest
 import ckan.tests.factories as factories
-import ckan.model as model
-from ckan.tests.helpers import reset_db
 from ckanext.dbquery.model import DBQueryExecuted
 
 
 @pytest.fixture
-def clean_db(reset_db, migrate_db_for):
-    reset_db()
+def clean_db(reset_db_fixture, migrate_db_for):
+    reset_db_fixture()
     migrate_db_for('dbquery')
 
 
@@ -36,7 +33,7 @@ def normal_user():
 def mock_executed_queries():
     """Create some mock executed queries."""
     user = factories.User()
-    
+
     queries = [
         DBQueryExecuted(
             query="SELECT * FROM package",
@@ -47,10 +44,10 @@ def mock_executed_queries():
             user_id=user['id']
         ),
     ]
-    
+
     for query in queries:
         query.save()
-    
+
     return queries
 
 
@@ -59,7 +56,7 @@ def app():
     """Return a WSGI application for use by tests."""
     from ckan.config.middleware import make_app
     from ckan.cli import load_config
-    
+
     config = load_config('/path/to/test.ini')
     app = make_app(config)
     return app
