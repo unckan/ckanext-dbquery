@@ -8,7 +8,7 @@ from ckanext.dbquery.model import DBQueryExecuted
 @pytest.mark.usefixtures("with_plugins")
 class TestQueryDatabaseAction:
 
-    def test_query_database_not_authorized(self, clean_db, normal_user):
+    def test_query_database_not_authorized(self, normal_user):
         """Test that non-sysadmin users can't run queries."""
         context = {
             'user': normal_user['name'],
@@ -22,7 +22,7 @@ class TestQueryDatabaseAction:
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('query_database', context, **data_dict)
 
-    def test_query_database_success(self, clean_db, sysadmin):
+    def test_query_database_success(self, sysadmin):
         """Test successful query execution."""
         context = {
             'user': sysadmin['name'],
@@ -48,7 +48,7 @@ class TestQueryDatabaseAction:
         assert saved_query.query == data_dict['query']
         assert saved_query.user_id == sysadmin['id']
 
-    def test_query_database_invalid_query(self, clean_db, sysadmin):
+    def test_query_database_invalid_query(self, sysadmin):
         """Test handling of invalid SQL queries."""
         context = {
             'user': sysadmin['name'],
@@ -65,7 +65,7 @@ class TestQueryDatabaseAction:
 
 class TestDBQueryExecutedListAction:
 
-    def test_dbquery_executed_list_not_authorized(self, clean_db, normal_user):
+    def test_dbquery_executed_list_not_authorized(self, normal_user):
         """Test that non-sysadmin users can't list executed queries."""
         context = {
             'user': normal_user['name'],
@@ -75,7 +75,7 @@ class TestDBQueryExecutedListAction:
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('dbquery_executed_list', context)
 
-    def test_dbquery_executed_list_success(self, clean_db, sysadmin, mock_executed_queries):
+    def test_dbquery_executed_list_success(self, sysadmin, mock_executed_queries):
         """Test successful listing of executed queries."""
         context = {
             'user': sysadmin['name'],
