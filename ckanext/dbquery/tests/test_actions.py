@@ -4,6 +4,8 @@ from ckan.plugins import toolkit
 from ckanext.dbquery.model import DBQueryExecuted
 
 
+@pytest.mark.ckan_config("ckan.plugins", "dbquery")
+@pytest.mark.usefixtures("with_plugins")
 class TestQueryDatabaseAction:
 
     def test_query_database_not_authorized(self, clean_db, normal_user):
@@ -20,11 +22,11 @@ class TestQueryDatabaseAction:
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('query_database', context, **data_dict)
 
-    def test_query_database_success(self, clean_db, sysadmin_user):
+    def test_query_database_success(self, clean_db, sysadmin):
         """Test successful query execution."""
         context = {
-            'user': sysadmin_user['name'],
-            'auth_user_obj': sysadmin_user,
+            'user': sysadmin['name'],
+            'auth_user_obj': sysadmin,
         }
 
         data_dict = {
@@ -44,13 +46,13 @@ class TestQueryDatabaseAction:
         saved_query = helpers.model.Session.query(DBQueryExecuted).first()
         assert saved_query is not None
         assert saved_query.query == data_dict['query']
-        assert saved_query.user_id == sysadmin_user['id']
+        assert saved_query.user_id == sysadmin['id']
 
-    def test_query_database_invalid_query(self, clean_db, sysadmin_user):
+    def test_query_database_invalid_query(self, clean_db, sysadmin):
         """Test handling of invalid SQL queries."""
         context = {
-            'user': sysadmin_user['name'],
-            'auth_user_obj': sysadmin_user,
+            'user': sysadmin['name'],
+            'auth_user_obj': sysadmin,
         }
 
         data_dict = {
@@ -73,11 +75,11 @@ class TestDBQueryExecutedListAction:
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('dbquery_executed_list', context)
 
-    def test_dbquery_executed_list_success(self, clean_db, sysadmin_user, mock_executed_queries):
+    def test_dbquery_executed_list_success(self, clean_db, sysadmin, mock_executed_queries):
         """Test successful listing of executed queries."""
         context = {
-            'user': sysadmin_user['name'],
-            'auth_user_obj': sysadmin_user,
+            'user': sysadmin['name'],
+            'auth_user_obj': sysadmin,
         }
 
         result = helpers.call_action('dbquery_executed_list', context)
