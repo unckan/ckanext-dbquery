@@ -66,6 +66,7 @@ def dbquery_executed_list(context, data_dict):
     # Get filter parameters
     user_filter = data_dict.get('user')
     date_filter = data_dict.get('date')
+    limit = data_dict.get('limit')
 
     # Get all executed queries
     queries = model.Session.query(DBQueryExecuted).order_by(DBQueryExecuted.timestamp.desc()).all()
@@ -77,6 +78,9 @@ def dbquery_executed_list(context, data_dict):
     if date_filter:
         date_obj = datetime.datetime.strptime(date_filter, '%Y-%m-%d').date()
         queries = [q for q in queries if q.timestamp.date() == date_obj]
+
+    if limit and isinstance(limit, int):
+        queries = queries[:limit]
 
     # Convert to dictionaries
     result = [query.dictize() for query in queries]
