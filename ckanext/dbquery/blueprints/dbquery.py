@@ -48,6 +48,16 @@ def history():
     if not toolkit.c.userobj or not toolkit.c.userobj.sysadmin:
         return toolkit.abort(403)
 
-    queries = toolkit.get_action('dbquery_executed_list')({}, {})
+    # Get filter parameters
+    user_filter = toolkit.request.args.get('user', '')
+    date_filter = toolkit.request.args.get('date', '')
+
+    filters = {}
+    if user_filter:
+        filters['user'] = user_filter
+    if date_filter:
+        filters['date'] = date_filter
+
+    queries = toolkit.get_action('dbquery_executed_list')({}, filters)
 
     return toolkit.render('dbquery/history.html', extra_vars={'queries': queries})

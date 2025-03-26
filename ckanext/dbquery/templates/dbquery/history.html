@@ -44,3 +44,19 @@
     <p>{{ _('No executed queries found.') }}</p>
   {% endif %}
 {% endblock %}
+
+{% block secondary_content %}
+  <h2 class="page-heading">{{ _('Filter Options') }}</h2>
+  <form method="get" class="form">
+    <div class="form-group">
+      <label for="user_filter">{{ _('Filter by User') }}</label>
+      <input type="text" id="user_filter" name="user" class="form-control" value="{{ request.args.get('user', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="date_filter">{{ _('Filter by Date') }}</label>
+      <input type="date" id="date_filter" name="date" class="form-control" value="{{ request.args.get('date', '') }}">
+    </div>
+    <button type="submit" class="btn btn-primary">{{ _('Apply Filter') }}</button>
+    <a href="{{ h.url_for('dbquery.history') }}" class="btn btn-default">{{ _('Clear') }}</a>
+  </form>
+{% endblock %}
