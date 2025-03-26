@@ -1,4 +1,5 @@
 import logging
+import datetime
 from ckanext.dbquery.model import DBQueryExecuted
 from sqlalchemy.sql.expression import text
 from ckan import model
@@ -62,8 +63,20 @@ def dbquery_executed_list(context, data_dict):
     # Check if user is authorized
     toolkit.check_access('query_database', context, data_dict)
 
+    # Get filter parameters
+    user_filter = data_dict.get('user')
+    date_filter = data_dict.get('date')
+
     # Get all executed queries
     queries = model.Session.query(DBQueryExecuted).order_by(DBQueryExecuted.timestamp.desc()).all()
+
+    # Apply filters if provided
+    if user_filter:
+        queries = [q for q in queries if user_filter.lower() in q.user_id.lower()]
+
+    if date_filter:
+        date_obj = datetime.datetime.strptime(date_filter, '%Y-%m-%d').date()
+        queries = [q for q in queries if q.timestamp.date() == date_obj]
 
     # Convert to dictionaries
     result = [query.dictize() for query in queries]
