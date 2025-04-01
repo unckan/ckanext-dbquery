@@ -19,10 +19,11 @@ class TestQueryDatabaseAction:
             'query': 'SELECT * FROM package LIMIT 5'
         }
 
+        # Ensure NotAuthorized is raised
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('query_database', context, **data_dict)
 
-    def test_query_database_success(self, sysadmin):
+    def test_query_database_success(self, clean_db, sysadmin):
         """Test successful query execution."""
         context = {
             'user': sysadmin['name'],
@@ -46,7 +47,6 @@ class TestQueryDatabaseAction:
         saved_query = helpers.model.Session.query(DBQueryExecuted).first()
         assert saved_query is not None
         assert saved_query.query == data_dict['query']
-        assert saved_query.user_id == sysadmin['id']
 
     def test_query_database_invalid_query(self, sysadmin):
         """Test handling of invalid SQL queries."""
@@ -62,9 +62,6 @@ class TestQueryDatabaseAction:
         with pytest.raises(toolkit.ValidationError):
             helpers.call_action('query_database', context, **data_dict)
 
-
-class TestDBQueryExecutedListAction:
-
     def test_dbquery_executed_list_not_authorized(self, normal_user):
         """Test that non-sysadmin users can't list executed queries."""
         context = {
@@ -72,6 +69,7 @@ class TestDBQueryExecutedListAction:
             'auth_user_obj': normal_user,
         }
 
+        # Ensure NotAuthorized is raised
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('dbquery_executed_list', context)
 

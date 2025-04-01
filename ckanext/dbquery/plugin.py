@@ -36,5 +36,6 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     # IAuthFunctions
     def get_auth_functions(self):
         return {
-            "query_database": auth.query_database,
+            "query_database": auth.dbquery_query_database,
+            "dbquery_executed_list": auth.dbquery_executed_list_auth,
         }
