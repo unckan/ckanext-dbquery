@@ -4,7 +4,6 @@ from ckan.plugins import toolkit
 from ckanext.dbquery.model import DBQueryExecuted
 
 
-@pytest.mark.ckan_config("ckan.plugins", "dbquery")
 @pytest.mark.usefixtures("with_plugins")
 class TestQueryDatabaseAction:
 
@@ -13,6 +12,7 @@ class TestQueryDatabaseAction:
         context = {
             'user': normal_user['name'],
             'auth_user_obj': normal_user,
+            'ignore_auth': False,
         }
 
         data_dict = {
@@ -67,6 +67,7 @@ class TestQueryDatabaseAction:
         context = {
             'user': normal_user['name'],
             'auth_user_obj': normal_user,
+            'ignore_auth': False,
         }
 
         # Ensure NotAuthorized is raised
