@@ -2,6 +2,7 @@ import logging
 import datetime
 from ckanext.dbquery.model import DBQueryExecuted
 from sqlalchemy.sql.expression import text
+from sqlalchemy import func
 from ckan import model
 from ckan.plugins import toolkit
 
@@ -66,22 +67,27 @@ def dbquery_executed_list(context, data_dict):
     # Get filter parameters
     user_filter = data_dict.get('user')
     date_filter = data_dict.get('date')
-    limit = data_dict.get('limit')
+    limit = int(data_dict.get('limit', 10))
 
     # Get all executed queries
-    queries = model.Session.query(DBQueryExecuted).order_by(DBQueryExecuted.timestamp.desc()).all()
+    queries = model.Session.query(DBQueryExecuted)
 
     # Apply filters if provided
     if user_filter:
-        queries = [q for q in queries if user_filter.lower() in q.user_id.lower()]
+        queries = queries.filter(DBQueryExecuted.user_id == user_filter)
 
     if date_filter:
-        date_obj = datetime.datetime.strptime(date_filter, '%Y-%m-%d').date()
-        queries = [q for q in queries if q.timestamp.date() == date_obj]
+        # date_filter is a string in the format YYYY-MM-DD
+        # we want queries from that exact date
+        date_obj = datetime.datetime.strptime(date_filter, "%Y-%m-%d").date()
+        # Use PostgreSQL's DATE function to extract just the date part
+        queries = queries.filter(func.date(DBQueryExecuted.timestamp) == date_obj)
 
+    queries = queries.order_by(DBQueryExecuted.timestamp.desc())
     if limit:
-        queries = queries[:int(limit)]
+        queries = queries[:limit]
 
+    queries = queries.all()
     # Convert to dictionaries
     result = [query.dictize() for query in queries]
 
