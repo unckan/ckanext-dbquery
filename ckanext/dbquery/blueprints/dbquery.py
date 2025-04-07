@@ -26,14 +26,10 @@ def index():
             data_dict = {'query': query}
             result = toolkit.get_action('query_database')(None, data_dict)
 
-    # Get recent queries for sidebar
-    queries = toolkit.get_action('dbquery_executed_list')({}, {})
-
     # Display results if any
     extra_vars = {
         'result': result,
         'query': query,
-        'queries': queries
     }
 
     return toolkit.render('dbquery/index.html', extra_vars=extra_vars)

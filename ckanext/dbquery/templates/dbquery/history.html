@@ -26,6 +26,7 @@
             <th>{{ _('User') }}</th>
             <th>{{ _('Query') }}</th>
             <th>{{ _('Timestamp') }}</th>
+            <th>{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -35,6 +36,7 @@
               <td>{{ query.user_id }}</td>
               <td><pre class="query-preview">{{ query.query }}</pre></td>
               <td>{{ h.render_datetime(query.timestamp, date_format="%Y-%m-%d %H:%M:%S") }}</td>
+              <td></td>
             </tr>
           {% endfor %}
         </tbody>
