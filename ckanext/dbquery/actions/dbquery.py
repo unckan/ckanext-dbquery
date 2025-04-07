@@ -79,8 +79,8 @@ def dbquery_executed_list(context, data_dict):
         date_obj = datetime.datetime.strptime(date_filter, '%Y-%m-%d').date()
         queries = [q for q in queries if q.timestamp.date() == date_obj]
 
-    if limit and isinstance(limit, int):
-        queries = queries[:limit]
+    if limit:
+        queries = queries[:int(limit)]
 
     # Convert to dictionaries
     result = [query.dictize() for query in queries]
