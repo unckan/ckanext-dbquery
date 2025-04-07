@@ -30,6 +30,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
         return {
             "query_database": actions.query_database,
             "dbquery_executed_list": actions.dbquery_executed_list,
+            "dbquery_executor_users_list": actions.dbquery_executor_users_list,
         }
 
     # IAuthFunctions
