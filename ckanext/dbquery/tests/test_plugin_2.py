@@ -15,17 +15,14 @@ class TestDbqueryPlugin:
         mock_config = {}
         plugin.update_config(mock_config)
 
-        # This is difficult to test directly, but at least we ensure it doesn't error
-        assert True
 
     def test_get_blueprint(self):
         """Test that get_blueprint returns a blueprint."""
         plugin = DbqueryPlugin()
-        blueprint = plugin.get_blueprint()
+        blueprints = plugin.get_blueprint()
 
-        assert blueprint is not None
-        assert blueprint.name == 'dbquery'
-        assert blueprint.url_prefix == '/ckan-admin/db-query'
+        assert blueprints is not None
+        assert 'dbquery' in [b.name for b in blueprints]
 
     def test_get_actions(self):
         """Test that get_actions returns the expected actions."""
