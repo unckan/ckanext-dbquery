@@ -1,5 +1,4 @@
 import pytest
-import ckan.tests.helpers as helpers
 from bs4 import BeautifulSoup
 
 
@@ -10,14 +9,8 @@ class TestDBQueryBlueprints:
 
     def test_index_not_authorized(self, app, normal_user):
         """Test that non-sysadmin users can't access the index page."""
-        helpers.call_action('user_create', name=normal_user['name'],
-                            email=normal_user['email'], password='password')
-
         with app.flask_app.test_client() as client:
-            # Login as normal user
             client.post('/user/login', data={'login': normal_user['name'], 'password': 'password'})
-
-            # Try to access the DB query page
             response = client.get('/ckan-admin/db-query/')
             assert response.status_code == 403
 
@@ -61,8 +54,6 @@ class TestDBQueryBlueprints:
 
     def test_history_not_authorized(self, app, normal_user):
         """Test that non-sysadmin users can't access the history page."""
-        helpers.call_action('user_create', name=normal_user['name'],
-                            email=normal_user['email'], password='password')
 
         with app.flask_app.test_client() as client:
             # Login as normal user
