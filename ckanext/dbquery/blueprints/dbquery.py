@@ -1,7 +1,5 @@
 from flask import Blueprint
 from ckan.plugins import toolkit
-from ckan import model
-from ckanext.dbquery.model import DBQueryExecuted
 
 
 dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/ckan-admin/db-query')
@@ -20,18 +18,6 @@ def index():
     result = None
     request = toolkit.request
 
-    # Check if we're loading a query from history
-    load_query_id = request.args.get('load_query')
-    if load_query_id:
-        # Find the query by ID
-        saved_query = model.Session.query(DBQueryExecuted).filter(
-            DBQueryExecuted.id == load_query_id
-        ).first()
-
-        if saved_query:
-            # Pre-populate the query field
-            query = saved_query.query
-
     # Process form submission
     if request.method == 'POST':
         form = request.form
@@ -40,14 +26,10 @@ def index():
             data_dict = {'query': query}
             result = toolkit.get_action('query_database')(None, data_dict)
 
-    # Get recent queries for sidebar
-    queries = toolkit.get_action('dbquery_executed_list')({}, {})
-
     # Display results if any
     extra_vars = {
         'result': result,
         'query': query,
-        'queries': queries
     }
 
     return toolkit.render('dbquery/index.html', extra_vars=extra_vars)
