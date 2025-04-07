@@ -1,5 +1,4 @@
 import pytest
-from ckan import model
 from ckan.tests import factories
 
 
@@ -7,10 +6,6 @@ from ckan.tests import factories
 def clean_db(reset_db, migrate_db_for):
     reset_db()
     migrate_db_for('dbquery')
-
-    # Forzar creación de tabla del modelo si no hay migraciones
-    from ckanext.dbquery.model import DBQueryExecuted
-    DBQueryExecuted.__table__.create(model.meta.engine, checkfirst=True)
 
 
 @pytest.fixture
