@@ -92,3 +92,26 @@ def dbquery_executed_list(context, data_dict):
     result = [query.dictize() for query in queries]
 
     return result
+
+
+@toolkit.side_effect_free
+def dbquery_executor_users_list(context, data_dict):
+    """ Get a list of users that have executed queries """
+    # Check if user is authorized
+    toolkit.check_access('query_database', context, data_dict)
+
+    # Get distinct users with names by joining with the user table
+    query = model.Session.query(
+        model.User.id.label('id'),
+        model.User.name.label('name')
+    ).join(
+        DBQueryExecuted, DBQueryExecuted.user_id == model.User.id
+    ).distinct()
+
+    # Convert to list of user dictionaries
+    result = [
+        {'id': user.id, 'name': user.name}
+        for user in query.all()
+    ]
+
+    return result
