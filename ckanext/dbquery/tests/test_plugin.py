@@ -48,10 +48,10 @@ To temporary patch the CKAN configuration for the duration of a test you can use
         pass
 """
 import pytest
-import ckanext.dbquery.plugin as plugin
+from ckan import plugins
 
 
 @pytest.mark.ckan_config("ckan.plugins", "dbquery")
 @pytest.mark.usefixtures("with_plugins")
 def test_plugin():
-    assert plugin.plugin_loaded("dbquery")
+    assert plugins.plugin_loaded("dbquery")

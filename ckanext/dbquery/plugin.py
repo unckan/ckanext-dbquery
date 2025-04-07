@@ -23,7 +23,7 @@ class DbqueryPlugin(plugins.SingletonPlugin):
 
     # IBlueprint: Registra el blueprint dbquery_bp
     def get_blueprint(self):
-        return dbquery_bp
+        return [dbquery_bp]
 
     # IActions
     def get_actions(self):
@@ -36,5 +36,6 @@ class DbqueryPlugin(plugins.SingletonPlugin):
     # IAuthFunctions
     def get_auth_functions(self):
         return {
-            "query_database": auth.query_database,
+            "query_database": auth.dbquery_query_database,
+            "dbquery_executed_list": auth.dbquery_executed_list_auth,
         }
