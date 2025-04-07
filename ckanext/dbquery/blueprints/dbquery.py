@@ -45,15 +45,23 @@ def history():
         return toolkit.abort(403)
 
     # Get filter parameters
-    user_filter = toolkit.request.args.get('user', '')
-    date_filter = toolkit.request.args.get('date', '')
+    # We need a list of user id + names that ran queiries in the past
+    user_filter = toolkit.get_action('dbquery_executor_users_list')({}, {})
+    f_user = toolkit.request.args.get('user', '')
+    f_date_filter = toolkit.request.args.get('date', '')
 
     filters = {}
-    if user_filter:
-        filters['user'] = user_filter
-    if date_filter:
-        filters['date'] = date_filter
+    if f_user:
+        filters['user'] = f_user
+    if f_date_filter:
+        filters['date'] = f_date_filter
 
     queries = toolkit.get_action('dbquery_executed_list')({}, filters)
 
-    return toolkit.render('dbquery/history.html', extra_vars={'queries': queries})
+    vars = {
+        'queries': queries,
+        'user_filter': f_user,
+        'date_filter': f_date_filter,
+        'users': user_filter,
+    }
+    return toolkit.render('dbquery/history.html', extra_vars=vars)
