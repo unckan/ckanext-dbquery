@@ -85,7 +85,7 @@ def dbquery_executed_list(context, data_dict):
 
     queries = queries.order_by(DBQueryExecuted.timestamp.desc())
     if limit:
-        queries = queries[:limit]
+        queries = queries.limit(limit)  # Use SQLAlchemy's limit() method instead of Python slicing
 
     queries = queries.all()
     # Convert to dictionaries
