@@ -11,7 +11,6 @@ def clean_db(reset_db, migrate_db_for):
 @pytest.fixture
 def normal_user():
     user = factories.User()
-    user['sysadmin'] = False
     return user
 
 
