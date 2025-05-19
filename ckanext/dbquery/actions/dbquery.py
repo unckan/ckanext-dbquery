@@ -38,7 +38,11 @@ def query_database(context, data_dict):
         message = f"Query affected {result.rowcount} rows"
 
     # Save executed query
-    user_id = context['auth_user_obj']['id']
+    user_obj = context.get('auth_user_obj')
+    if isinstance(user_obj, dict):
+        user_id = user_obj.get('id')
+    else:
+        user_id = user_obj.id
     executed = DBQueryExecuted(
         query=query,
         user_id=user_id
