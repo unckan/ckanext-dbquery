@@ -35,7 +35,7 @@ class TestDBQueryBlueprints:
         user = factories.SysadminWithToken()
         headers = {"Authorization": user['token']}
 
-        response = app.post('/ckan-admin/db-query/', headers=headers, params={
+        response = app.post('/ckan-admin/db-query/', headers=headers, data={
             'query': 'SELECT id FROM package LIMIT 5'
         })
         assert response.status_code == 200

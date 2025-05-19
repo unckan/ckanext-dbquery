@@ -8,7 +8,7 @@ from ckan.tests import factories
 @pytest.mark.usefixtures("with_plugins")
 class TestDBQueryTemplates:
 
-    def test_index_template(self, app, mock_executed_queries=None):
+    def test_index_template(self, app):
         """Test index.html template renders correctly."""
 
         user = factories.SysadminWithToken()

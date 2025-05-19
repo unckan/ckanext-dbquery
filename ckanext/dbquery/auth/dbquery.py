@@ -5,9 +5,9 @@ log = logging.getLogger(__name__)
 
 
 def dbquery_query_database(context, data_dict):
-    log.warning(">>> ENTRANDO a dbquery_query_database <<<")
+    log.debug(">>> ENTRANDO a dbquery_query_database <<<")
     user = context.get('auth_user_obj')
-    log.warning(f"user={user}")
+    log.debug(f"user={user}")
     if user and user.get('sysadmin'):
         return {'success': True}
     else:
@@ -15,7 +15,7 @@ def dbquery_query_database(context, data_dict):
 
 
 def dbquery_executed_list_auth(context, data_dict):
-    log.warning(">>> ENTRANDO a dbquery_executed_list_auth <<<")
+    log.debug(">>> ENTRANDO a dbquery_executed_list_auth <<<")
     user = context.get('auth_user_obj')
     if user and user.get('sysadmin'):
         return {'success': True}
