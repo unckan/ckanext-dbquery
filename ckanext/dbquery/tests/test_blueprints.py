@@ -1,6 +1,5 @@
 import pytest
 from bs4 import BeautifulSoup
-from ckan.tests import factories
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -10,17 +9,14 @@ class TestDBQueryBlueprints:
 
     def test_index_not_authorized(self, app, normal_user):
         """Test that non-sysadmin users can't access the index page."""
-        with app.flask_app.test_client() as client:
-            client.post('/user/login', data={'login': normal_user['name'], 'password': 'password'})
-            response = client.get('/ckan-admin/db-query/')
-            assert response.status_code == 403
+        auth = {"Authorization": normal_user['token']}
+        response = app.get('/ckan-admin/db-query/', headers=auth)
+        assert response.status_code == 403
 
-    def test_index_authorized(self, app):
+    def test_index_authorized(self, app, sysadmin):
         """Test that sysadmin users can access the index page."""
         # Create a sysadmin user
-        user = factories.SysadminWithToken()
-        auth = {"Authorization": user['token']}
-
+        auth = {"Authorization": sysadmin['token']}
         response = app.get('/ckan-admin/db-query/', headers=auth)
         assert response.status_code == 200
 
@@ -29,12 +25,9 @@ class TestDBQueryBlueprints:
         assert soup.find('textarea', id='query') is not None
         assert soup.find('button', type='submit', text='Run query') is not None
 
-    def test_index_query_submission(self, app):
+    def test_index_query_submission(self, app, sysadmin):
         """Test query submission through the form."""
-        # Create a sysadmin user
-        user = factories.SysadminWithToken()
-        headers = {"Authorization": user['token']}
-
+        headers = {"Authorization": sysadmin['token']}
         response = app.post('/ckan-admin/db-query/', headers=headers, data={
             'query': 'SELECT id FROM package LIMIT 5'
         })
@@ -48,21 +41,15 @@ class TestDBQueryBlueprints:
 
     def test_history_not_authorized(self, app, normal_user):
         """Test that non-sysadmin users can't access the history page."""
+        # Try to access the history page
+        auth = {"Authorization": normal_user['token']}
+        response = app.get('/ckan-admin/db-query/history', headers=auth)
+        assert response.status_code == 403
 
-        with app.flask_app.test_client() as client:
-            # Login as normal user
-            client.post('/user/login', data={'login': normal_user['name'], 'password': 'password'})
-
-            # Try to access the history page
-            response = client.get('/ckan-admin/db-query/history')
-            assert response.status_code == 403
-
-    def test_history_authorized(self, app, mock_executed_queries):
+    def test_history_authorized(self, app, mock_executed_queries, sysadmin):
         """Test that sysadmin users can access the history page."""
 
-        user = factories.SysadminWithToken()
-        headers = {"Authorization": user['token']}
-
+        headers = {"Authorization": sysadmin['token']}
         response = app.get('/ckan-admin/db-query/history', headers=headers)
         assert response.status_code == 200
 
