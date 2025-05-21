@@ -39,10 +39,7 @@ def query_database(context, data_dict):
 
     # Save executed query
     user_obj = context.get('auth_user_obj')
-    if isinstance(user_obj, dict):
-        user_id = user_obj.get('id')
-    else:
-        user_id = user_obj.id
+    user_id = user_obj.id
     executed = DBQueryExecuted(
         query=query,
         user_id=user_id

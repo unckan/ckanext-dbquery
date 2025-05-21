@@ -10,12 +10,18 @@ def clean_db(reset_db, migrate_db_for):
 
 @pytest.fixture
 def normal_user():
-    user = factories.User()
+    user = factories.UserWithToken()
     return user
 
 
 @pytest.fixture
-def mock_executed_queries(clean_db, sysadmin):
+def sysadmin():
+    user = factories.SysadminWithToken()
+    return user
+
+
+@pytest.fixture
+def mock_executed_queries(sysadmin):
     from ckanext.dbquery.model import DBQueryExecuted
 
     queries = [

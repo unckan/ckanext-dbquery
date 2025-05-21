@@ -1,23 +1,8 @@
-from ckan.plugins import toolkit
-import logging
-
-log = logging.getLogger(__name__)
 
 
 def dbquery_query_database(context, data_dict):
-    log.debug(">>> ENTRANDO a dbquery_query_database <<<")
-    user = context.get('auth_user_obj')
-    log.debug(f"user={user}")
-    if user and user.get('sysadmin'):
-        return {'success': True}
-    else:
-        raise toolkit.NotAuthorized("Only sysadmins can run queries")
+    return {'success': False, 'msg': 'Only sysadmins are allowed.'}
 
 
 def dbquery_executed_list_auth(context, data_dict):
-    log.debug(">>> ENTRANDO a dbquery_executed_list_auth <<<")
-    user = context.get('auth_user_obj')
-    if user and user.get('sysadmin'):
-        return {'success': True}
-    else:
-        raise toolkit.NotAuthorized("Only sysadmins can list executed queries")
+    return {'success': False, 'msg': 'Only sysadmins are allowed.'}

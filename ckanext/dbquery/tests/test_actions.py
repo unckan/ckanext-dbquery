@@ -4,34 +4,27 @@ from ckan.plugins import toolkit
 from ckanext.dbquery.model import DBQueryExecuted
 
 
-@pytest.mark.usefixtures("with_plugins")
+@pytest.mark.usefixtures("clean_db", "with_plugins")
 class TestQueryDatabaseAction:
 
     def test_query_database_not_authorized(self, normal_user):
         """Test that non-sysadmin users can't run queries."""
-        context = {
-            'user': normal_user['name'],
-            'auth_user_obj': normal_user,
-            'ignore_auth': False,
-        }
+        context = {'user': normal_user['name']}
 
         data_dict = {
-            'query': 'SELECT * FROM package LIMIT 5'
+            'query': 'SELECT * FROM package LIMIT 5',
         }
 
         # Ensure NotAuthorized is raised
         with pytest.raises(toolkit.NotAuthorized):
             helpers.call_action('query_database', context, **data_dict)
 
-    def test_query_database_success(self, clean_db, sysadmin):
+    def test_query_database_success(self, sysadmin):
         """Test successful query execution."""
-        context = {
-            'user': sysadmin['name'],
-            'auth_user_obj': sysadmin,
-        }
+        context = {'user': sysadmin['name']}
 
         data_dict = {
-            'query': 'SELECT id FROM package LIMIT 5'
+            'query': 'SELECT id FROM package LIMIT 5',
         }
 
         result = helpers.call_action('query_database', context, **data_dict)
@@ -52,11 +45,10 @@ class TestQueryDatabaseAction:
         """Test handling of invalid SQL queries."""
         context = {
             'user': sysadmin['name'],
-            'auth_user_obj': sysadmin,
         }
 
         data_dict = {
-            'query': 'SELECT * FROM non_existent_table'
+            'query': 'SELECT * FROM non_existent_table',
         }
 
         with pytest.raises(toolkit.ValidationError):
@@ -66,8 +58,6 @@ class TestQueryDatabaseAction:
         """Test that non-sysadmin users can't list executed queries."""
         context = {
             'user': normal_user['name'],
-            'auth_user_obj': normal_user,
-            'ignore_auth': False,
         }
 
         # Ensure NotAuthorized is raised
@@ -78,7 +68,6 @@ class TestQueryDatabaseAction:
         """Test successful listing of executed queries."""
         context = {
             'user': sysadmin['name'],
-            'auth_user_obj': sysadmin,
         }
 
         result = helpers.call_action('dbquery_executed_list', context)
