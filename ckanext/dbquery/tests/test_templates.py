@@ -1,6 +1,5 @@
 import pytest
 from bs4 import BeautifulSoup
-from ckan.tests import factories
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -8,12 +7,10 @@ from ckan.tests import factories
 @pytest.mark.usefixtures("with_plugins")
 class TestDBQueryTemplates:
 
-    def test_index_template(self, app):
+    def test_index_template(self, app, sysadmin):
         """Test index.html template renders correctly."""
 
-        user = factories.SysadminWithToken()
-        headers = {"Authorization": user['token']}
-
+        headers = {"Authorization": sysadmin['token']}
         response = app.get('/ckan-admin/db-query/', headers=headers)
         assert response.status_code == 200
 
@@ -29,12 +26,10 @@ class TestDBQueryTemplates:
         assert soup.find('h1', {'class': 'page-heading'}, text='DB Query Tools') is not None
         assert soup.find('a', string=lambda s: s and 'Show executed queries' in s) is not None
 
-    def test_history_template(self, app, mock_executed_queries):
+    def test_history_template(self, app, mock_executed_queries, sysadmin):
         """Test history.html template renders correctly."""
 
-        user = factories.SysadminWithToken()
-        headers = {"Authorization": user['token']}
-
+        headers = {"Authorization": sysadmin['token']}
         response = app.get('/ckan-admin/db-query/history', headers=headers)
         assert response.status_code == 200
 
