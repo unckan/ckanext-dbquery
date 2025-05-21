@@ -1,5 +1,3 @@
-
-import pytest
 from ckan import plugins
 
 from ckanext.dbquery.plugin import DbqueryPlugin
