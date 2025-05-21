@@ -4,7 +4,7 @@ from ckan.plugins import toolkit
 from ckanext.dbquery.model import DBQueryExecuted
 
 
-@pytest.mark.usefixtures("clean_db", "with_plugins")
+@pytest.mark.usefixtures("clean_db")
 class TestQueryDatabaseAction:
 
     def test_query_database_not_authorized(self, normal_user):

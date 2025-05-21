@@ -3,8 +3,6 @@ from bs4 import BeautifulSoup
 
 
 @pytest.mark.usefixtures("clean_db")
-@pytest.mark.ckan_config("ckan.plugins", "dbquery")
-@pytest.mark.usefixtures("with_plugins")
 class TestDBQueryBlueprints:
 
     def test_index_not_authorized(self, app, normal_user):

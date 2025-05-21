@@ -5,8 +5,6 @@ from ckan import plugins
 from ckanext.dbquery.plugin import DbqueryPlugin
 
 
-@pytest.mark.ckan_config("ckan.plugins", "dbquery")
-@pytest.mark.usefixtures("with_plugins")
 def test_plugin():
     assert plugins.plugin_loaded("dbquery")
 

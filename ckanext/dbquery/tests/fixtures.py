@@ -8,6 +8,12 @@ def clean_db(reset_db, migrate_db_for):
     migrate_db_for('dbquery')
 
 
+@pytest.fixture(autouse=True)
+def load_standard_plugins(with_plugins):
+    """ Use 'with_plugins' fixture in ALL tests """
+    pass
+
+
 @pytest.fixture
 def normal_user():
     user = factories.UserWithToken()
