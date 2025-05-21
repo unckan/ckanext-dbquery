@@ -7,11 +7,12 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ckan/ckan-dev:2.11.3
+      image: ckan/ckan-dev:2.11
+      options: --user root
 
     services:
       solr:
-        image: ckan/ckan-solr:2.10-spatial
+        image: ckan/ckan-solr:2.11-solr9
 
       postgres:
         image: ckan/ckan-postgres-dev:2.11
@@ -40,9 +41,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # - name: Install OS dependencies
-      #   run: |
-      #     apt install postgresql-client
+      - name: Install OS dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            coreutils \
+            libffi-dev \
+            gcc \
+            libc-dev \
+            postgresql-client \
+            tar \
+            libproj-dev \
+            proj-bin
 
       - name: Install Python dependencies
         run: |

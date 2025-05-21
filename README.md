@@ -1,3 +1,5 @@
+[![Tests](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension.yml/badge.svg?branch=main)](https://github.com/unckan/ckanext-dbquery/actions)
+
 # ckanext-dbquery
 
 This extension allow sysadmin to **run ANY SQL query on the CKAN database**.  
