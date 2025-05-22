@@ -43,8 +43,8 @@
           <tbody>
             {% for row in result.rows %}
             <tr>
-              {% for col in row %}
-              <td>{{ col }}</td>
+              {% for colname in result.colnames %}
+              <td>{{ row[colname] }}</td>
               {% endfor %}
             </tr>
             {% endfor %}
