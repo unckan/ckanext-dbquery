@@ -11,20 +11,19 @@ log = logging.getLogger(__name__)
 
 
 def query_database(context, data_dict):
-    """ Realiza una consulta a la base de datos y retorna los resultados usando la sesión de CKAN"""
-
+    """Execute a database query and return the results using CKAN's session."""
     toolkit.check_access('query_database', context, data_dict)
 
     query = data_dict.get('query')
-    # Usar la sesión SQLAlchemy de CKAN en lugar de crear una nueva conexión
+    # Use CKAN's SQLAlchemy session
     engine = model.meta.engine
 
     try:
         text_sql = text(query)
         result = engine.execute(text_sql)
     except Exception as e:
-        log.critical(f"Error al ejecutar la consulta {query}: {e}")
-        raise toolkit.ValidationError({"query": f"Invalid Query {e}"})
+        log.critical(f"Error executing query {query}: {e}")
+        raise toolkit.ValidationError({"query": f"Invalid Query: {e}"})
 
     # Check if it's a SELECT query that returns rows
     has_results = result.returns_rows
@@ -39,17 +38,17 @@ def query_database(context, data_dict):
         message = f"Query affected {result.rowcount} rows"
 
     # Save executed query
-    user = context['auth_user_obj']
+    user_obj = context.get('auth_user_obj')
+    user_id = user_obj.id
     executed = DBQueryExecuted(
         query=query,
-        user_id=user.id
+        user_id=user_id
     )
     executed.save()
 
     resp = {
-        "rows": rows,
+        "rows": [dict(zip(colnames, row)) for row in rows],
         "colnames": colnames,
-        "result_obj": result,
         "message": message,
     }
 
