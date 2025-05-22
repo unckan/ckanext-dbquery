@@ -9,7 +9,7 @@ class TestQueryDatabaseAction:
 
     def test_query_database_not_authorized(self, normal_user):
         """Test that non-sysadmin users can't run queries."""
-        context = {'user': normal_user['name']}
+        context = {'user': normal_user['name'], 'ignore_auth': False}
 
         data_dict = {
             'query': 'SELECT * FROM package LIMIT 5',
@@ -21,7 +21,7 @@ class TestQueryDatabaseAction:
 
     def test_query_database_success(self, sysadmin):
         """Test successful query execution."""
-        context = {'user': sysadmin['name']}
+        context = {'user': sysadmin['name'], 'ignore_auth': False}
 
         data_dict = {
             'query': 'SELECT id FROM package LIMIT 5',
@@ -45,6 +45,7 @@ class TestQueryDatabaseAction:
         """Test handling of invalid SQL queries."""
         context = {
             'user': sysadmin['name'],
+            'ignore_auth': False
         }
 
         data_dict = {
@@ -58,6 +59,7 @@ class TestQueryDatabaseAction:
         """Test that non-sysadmin users can't list executed queries."""
         context = {
             'user': normal_user['name'],
+            'ignore_auth': False
         }
 
         # Ensure NotAuthorized is raised
@@ -68,6 +70,7 @@ class TestQueryDatabaseAction:
         """Test successful listing of executed queries."""
         context = {
             'user': sysadmin['name'],
+            'ignore_auth': False
         }
 
         result = helpers.call_action('dbquery_executed_list', context)
