@@ -26,7 +26,13 @@
     <button class="btn btn-danger" type="button" id="reset-query-btn" 
             data-confirm="{{ _('Are you sure you want to clear the query?') }}">Reset</button>
   </form>
-  
+
+  {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+      <strong>Error:</strong> {{ error_message }}
+    </div>
+  {% endif %}
+
   {% if result %}
     <div class="results-section">
       <h3>Results</h3>
