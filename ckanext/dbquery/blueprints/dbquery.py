@@ -29,8 +29,12 @@ def index():
             try:
                 result = toolkit.get_action('query_database')(None, data_dict)
             except ValidationError as e:
-                # Extract the error message to display to the user
-                error_message = e.error_dict.get('query') if hasattr(e, 'error_dict') else str(e)
+                # Extract a user-friendly message from the error dict or fallback to string
+                error_message = next(iter(e.error_dict.values())) if hasattr(e, 'error_dict') and e.error_dict else str(e)
+            except Exception as e:
+                # Catch unexpected exceptions and log them
+                error_message = "An unexpected error occurred while processing your query. Please try again later."
+                toolkit.log.error(f"Error executing query: {str(e)}")
 
     # Display results if any
     extra_vars = {
