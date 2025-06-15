@@ -61,11 +61,11 @@ class TestDBQueryTemplates:
 
         response = app.post(
             '/ckan-admin/db-query/',
-            params={'query': 'SELECT * FROM dataset'},
+            params={'query': 'SELECT * FROM non_existent_table'},
             headers=auth,
             status=200
         )
 
         html = response.text
 
-        assert "Invalid Query" in html or "does not exist" in html
+        assert "Invalid Query" in html
