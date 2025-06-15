@@ -69,7 +69,7 @@ class TestDBQueryTemplates:
 
         assert "Invalid Query" in html
 
-    def test_query_unauth(self, app, normal_user):
+    def test_query_post_unauth(self, app, normal_user):
         """
         Verifies that an invalid SQL query (such as a non-existent table)
         does not generate a 500 error and displays an error message to the user in the interface.
@@ -79,6 +79,23 @@ class TestDBQueryTemplates:
         response = app.post(
             '/ckan-admin/db-query/',
             params={'query': 'SELECT * FROM non_existent_table'},
+            headers=auth,
+            status=403
+        )
+
+        html = response.text
+
+        assert "Unauthorized" in html
+
+    def test_query_get_unauth(self, app, normal_user):
+        """
+        Verifies that an invalid SQL query (such as a non-existent table)
+        does not generate a 500 error and displays an error message to the user in the interface.
+        """
+        auth = {"Authorization": normal_user['token']}
+
+        response = app.get(
+            '/ckan-admin/db-query/',
             headers=auth,
             status=403
         )
