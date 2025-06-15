@@ -51,7 +51,6 @@ class TestDBQueryTemplates:
         assert "SELECT * FROM package" in query_texts
         assert "SELECT * FROM user" in query_texts
 
-    @pytest.mark.usefixtures("clean_db")
     def test_invalid_sql_query_shows_error_message(self, app, sysadmin):
         """
         Verifies that an invalid SQL query (such as a non-existent table)
@@ -69,3 +68,21 @@ class TestDBQueryTemplates:
         html = response.text
 
         assert "Invalid Query" in html
+
+    def test_query_unauth(self, app, normal_user):
+        """
+        Verifies that an invalid SQL query (such as a non-existent table)
+        does not generate a 500 error and displays an error message to the user in the interface.
+        """
+        auth = {"Authorization": normal_user['token']}
+
+        response = app.post(
+            '/ckan-admin/db-query/',
+            params={'query': 'SELECT * FROM non_existent_table'},
+            headers=auth,
+            status=403
+        )
+
+        html = response.text
+
+        assert "Unauthorized" in html

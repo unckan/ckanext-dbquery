@@ -35,6 +35,7 @@ def index():
                 error_message = f'Query validation error: {e}'
             except toolkit.NotAuthorized as e:
                 error_message = f'Unauthorized: {e}'
+                toolkit.abort(403, error_message)
             except Exception as e:
                 # Catch unexpected exceptions and log them
                 error_message = f"An unexpected error occurred while processing your query. {e}."
