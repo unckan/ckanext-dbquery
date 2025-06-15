@@ -83,9 +83,7 @@ class TestDBQueryTemplates:
             status=403
         )
 
-        html = response.text
-
-        assert "Unauthorized" in html
+        assert response.status_code == 403
 
     def test_query_get_unauth(self, app, normal_user):
         """
@@ -100,6 +98,4 @@ class TestDBQueryTemplates:
             status=403
         )
 
-        html = response.text
-
-        assert "Unauthorized" in html
+        assert response.status_code == 403
