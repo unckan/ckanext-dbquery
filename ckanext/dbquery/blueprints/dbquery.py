@@ -1,7 +1,9 @@
+import logging
 from flask import Blueprint
 from ckan.plugins import toolkit
 
 
+log = logging.getLogger(__name__)
 dbquery_bp = Blueprint('dbquery', __name__, url_prefix='/ckan-admin/db-query')
 
 
@@ -10,12 +12,14 @@ def index():
     """
     Run a custom query on the database
     """
-    # Verificar que el usuario sea un administrador del sistema
+    log.info(f'dbquery index called {toolkit.request.method}')
+    # Check that the user is a system administrator
     if not toolkit.c.userobj or not toolkit.c.userobj.sysadmin:
         return toolkit.abort(403)
 
     query = None
     result = None
+    error_message = None
     request = toolkit.request
 
     # Process form submission
@@ -24,13 +28,25 @@ def index():
         query = form.get('query')
         if query:
             data_dict = {'query': query}
-            result = toolkit.get_action('query_database')(None, data_dict)
+            try:
+                result = toolkit.get_action('query_database')(None, data_dict)
+            except toolkit.ValidationError as e:
+                # Extract a user-friendly message from the error dict or fallback to string
+                error_message = f'Query validation error: {e}'
+            except toolkit.NotAuthorized as e:
+                error_message = f'Unauthorized: {e}'
+                toolkit.abort(403, error_message)
+            except Exception as e:
+                # Catch unexpected exceptions and log them
+                error_message = f"An unexpected error occurred while processing your query. {e}."
 
     # Display results if any
     extra_vars = {
         'result': result,
         'query': query,
+        'error_message': error_message,
     }
+    log.info(f'dbquery index finished: {query}, error: {error_message}')
 
     return toolkit.render('dbquery/index.html', extra_vars=extra_vars)
 
