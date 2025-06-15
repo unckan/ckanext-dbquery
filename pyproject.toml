@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-dbquery"
-version = "0.2.1"
+version = "0.2.2"
 description = "CKAN extension for querying the internal CKAN database"
 readme = "README.md"
 authors = [
