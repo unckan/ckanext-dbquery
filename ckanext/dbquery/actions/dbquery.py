@@ -11,31 +11,33 @@ log = logging.getLogger(__name__)
 
 
 def query_database(context, data_dict):
-    """Execute a database query and return the results using CKAN's session."""
+    """Execute a database query and return the results using CKAN's engine."""
     toolkit.check_access('query_database', context, data_dict)
 
     query = data_dict.get('query')
-    # Use CKAN's SQLAlchemy session
+    # Use CKAN's SQLAlchemy engine
     engine = model.meta.engine
 
     try:
-        text_sql = text(query)
-        result = engine.execute(text_sql)
+        # SQLAlchemy 2 requires an explicit connection and transaction.
+        # Consume results before closing it; successful writes are committed
+        # and errors roll back before the connection returns to the pool.
+        with engine.begin() as connection:
+            result = connection.execute(text(query))
+            try:
+                if result.returns_rows:
+                    rows = result.fetchall()
+                    colnames = list(result.keys())
+                    message = f"Query returned {len(rows)} rows"
+                else:
+                    rows = []
+                    colnames = []
+                    message = f"Query affected {result.rowcount} rows"
+            finally:
+                result.close()
     except Exception as e:
         log.critical(f"Error executing query {query}: {e}")
         raise toolkit.ValidationError({"query": f"Invalid Query: {e}"})
-
-    # Check if it's a SELECT query that returns rows
-    has_results = result.returns_rows
-    # Delete or update queries don't return results
-    if has_results:
-        rows = result.fetchall()
-        colnames = result.keys()
-        message = f"Query returned {len(rows)} rows"
-    else:
-        rows = []
-        colnames = []
-        message = f"Query affected {result.rowcount} rows"
 
     # Save executed query
     user_obj = context.get('auth_user_obj')
