@@ -1,4 +1,5 @@
-[![Tests](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension.yml/badge.svg?branch=main)](https://github.com/unckan/ckanext-dbquery/actions)
+[![Tests CKAN 2.11](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension-2.11.yml/badge.svg?branch=main)](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension-2.11.yml)
+[![Tests CKAN 2.12](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension-2.12.yml/badge.svg?branch=main)](https://github.com/unckan/ckanext-dbquery/actions/workflows/test-extension-2.12.yml)
 
 # ckanext-dbquery
 
@@ -16,7 +17,16 @@ Compatibility with core CKAN versions:
 | --------------- | ------------- |
 | 2.9 and earlier | not tested    |
 | 2.10            | not tested    |
-| 2.11            | In progress   |
+| 2.11            | CI target     |
+| 2.12            | Adapted; full validation pending |
+
+Python 3.10 or later is required.
+
+Queries use explicit SQLAlchemy connections and transactions, compatible with
+SQLAlchemy 1.4 and 2.x. Successful queries commit, failed queries roll back, and
+results are read before the connection is closed. Commands that require running
+outside a transaction (such as `VACUUM` or `CREATE DATABASE`) are not supported
+by this query interface.
 
 ## Config settings
 
@@ -24,9 +34,26 @@ None at present
 
 ## Tests
 
-To run the tests, do:
+Run the tests inside your CKAN virtual environment:
 
-    pytest --ckan-ini=test.ini
+```bash
+pytest --ckan-ini=test.ini
+```
+
+Install this extension (`pip install -e .`) and its test dependencies
+(`pip install -r dev-requirements.txt`). Adapt `test.ini` to the location of
+CKAN's `test-core.ini` and your test PostgreSQL, Solr and Redis services.
+Use a dedicated test database: the fixtures reset its contents.
+
+GitHub Actions runs the same suite through two independent workflows:
+
+- `.github/workflows/test-extension-2.11.yml`: CKAN 2.11 and Solr 2.11.
+- `.github/workflows/test-extension-2.12.yml`: CKAN 2.12 and Solr 2.12.
+
+Both use the shared `test.ini`, adapting paths and service hosts inside CI.
+Each workflow has its own isolated services. Local validation on CKAN 2.12
+is still pending. Transaction regression tests cover committed writes,
+`INSERT ... RETURNING`, rollback on failure and subsequent successful queries.
 
 ## License
 
