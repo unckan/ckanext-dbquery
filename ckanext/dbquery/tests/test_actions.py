@@ -1,3 +1,6 @@
+import sqlite3
+from unittest.mock import Mock
+
 import pytest
 from ckan.tests import helpers
 from ckan.plugins import toolkit
@@ -85,3 +88,63 @@ class TestQueryDatabaseAction:
         # Check order (newest first)
         timestamps = [item['timestamp'] for item in result]
         assert timestamps[0] >= timestamps[1]
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestSeparateQueryConnection:
+    @pytest.fixture
+    def reader(self, tmp_path, monkeypatch):
+        database = tmp_path / "queries.db"
+        with sqlite3.connect(str(database)) as connection:
+            connection.execute("CREATE TABLE reader_data (value TEXT)")
+            connection.execute("INSERT INTO reader_data VALUES ('separate database')")
+        url = f"sqlite:///file:{database}?mode=ro&uri=true"
+        monkeypatch.setitem(toolkit.config, 'ckanext.dbquery.sqlalchemy.url', url)
+        return database
+
+    def test_separate_connection_and_ckan_history(self, reader, sysadmin):
+        query = 'SELECT value FROM reader_data'
+        result = helpers.call_action('query_database',
+                                     {'user': sysadmin['name'], 'ignore_auth': False},
+                                     query=query)
+        assert result['rows'] == [{'value': 'separate database'}]
+        assert result['colnames'] == ['value']
+        assert result['message'] == 'Query returned 1 rows'
+        saved = helpers.model.Session.query(DBQueryExecuted).one()
+        assert saved.query == query
+        assert saved.user_id == sysadmin['id']
+
+    @pytest.mark.parametrize('query', [
+        'DELETE FROM reader_data',
+        'DROP TABLE reader_data',
+    ])
+    def test_readonly_database_rejects_writes(self, reader, sysadmin, query):
+        context = {'user': sysadmin['name'], 'ignore_auth': False}
+        with pytest.raises(toolkit.ValidationError):
+            helpers.call_action('query_database', context, query=query)
+        result = helpers.call_action('query_database', context,
+                                     query='SELECT value FROM reader_data')
+        assert result['rows'] == [{'value': 'separate database'}]
+        assert helpers.model.Session.query(DBQueryExecuted).count() == 1
+
+    @pytest.mark.parametrize('url', [
+        'invalid-url-with-secret',
+        'sqlite:////nonexistent-dbquery-directory/database.db',
+    ])
+    def test_configured_failure_never_falls_back(self, monkeypatch, sysadmin, url):
+        monkeypatch.setitem(toolkit.config, 'ckanext.dbquery.sqlalchemy.url', url)
+        engine = Mock()
+        monkeypatch.setattr(helpers.model.meta, 'engine', engine)
+        with pytest.raises(toolkit.ValidationError) as error:
+            helpers.call_action('query_database',
+                                {'user': sysadmin['name'], 'ignore_auth': False},
+                                query='SELECT 1')
+        engine.execute.assert_not_called()
+        assert url not in str(error.value)
+
+    def test_empty_url_uses_ckan(self, monkeypatch, sysadmin):
+        monkeypatch.setitem(toolkit.config, 'ckanext.dbquery.sqlalchemy.url', '')
+        result = helpers.call_action('query_database',
+                                     {'user': sysadmin['name'], 'ignore_auth': False},
+                                     query='SELECT id FROM package LIMIT 1')
+        assert result['colnames'] == ['id']
