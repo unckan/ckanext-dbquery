@@ -18,7 +18,7 @@ Compatibility with core CKAN versions:
 | 2.9 and earlier | not tested    |
 | 2.10            | not tested    |
 | 2.11            | CI target     |
-| 2.12            | Adapted; full validation pending |
+| 2.12.1          | CI target     |
 
 Python 3.10 or later is required.
 
@@ -48,11 +48,10 @@ Use a dedicated test database: the fixtures reset its contents.
 GitHub Actions runs the same suite through two independent workflows:
 
 - `.github/workflows/test-extension-2.11.yml`: CKAN 2.11 and Solr 2.11.
-- `.github/workflows/test-extension-2.12.yml`: CKAN 2.12 and Solr 2.12.
+- `.github/workflows/test-extension-2.12.yml`: CKAN 2.12.1 and Solr 2.12.
 
 Both use the shared `test.ini`, adapting paths and service hosts inside CI.
-Each workflow has its own isolated services. Local validation on CKAN 2.12
-is still pending. Transaction regression tests cover committed writes,
+Each workflow has its own isolated services. Transaction regression tests cover committed writes,
 `INSERT ... RETURNING`, rollback on failure and subsequent successful queries.
 
 ## License

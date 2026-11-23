@@ -1,9 +1,9 @@
 # Next release
 
-- Add independent GitHub Actions workflows for CKAN 2.11 and 2.12, sharing test.ini.
+- Add independent GitHub Actions workflows for CKAN 2.11 and 2.12.1, sharing test.ini.
 
 - Support CKAN 2.12 / SQLAlchemy 2 with explicit query connections and transactions.
-- Test commit, RETURNING results and rollback behavior; run CI on CKAN 2.11 and 2.12.
+- Test commit, RETURNING results and rollback behavior.
 
 # 0.2.3 2025-06-15
 

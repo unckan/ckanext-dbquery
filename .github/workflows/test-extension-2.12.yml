@@ -1,4 +1,4 @@
-name: Tests CKAN 2.12
+name: Tests CKAN 2.12.1
 on:
   - push
   - pull_request
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ckan/ckan-dev:2.12
+      image: ckan/ckan-dev:2.12.1
       options: --user root
 
     services:
