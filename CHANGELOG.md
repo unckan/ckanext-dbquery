@@ -1,5 +1,10 @@
 # Next release
 
+- Add independent GitHub Actions workflows for CKAN 2.11 and 2.12.1, sharing test.ini.
+
+- Support CKAN 2.12 / SQLAlchemy 2 with explicit query connections and transactions.
+- Test commit, RETURNING results and rollback behavior.
+
 # 0.2.4 2026-11-09
 
  - Optional read-only database connection for queries (`ckanext.dbquery.sqlalchemy.url`) [#27](https://github.com/unckan/ckanext-dbquery/pull/27)

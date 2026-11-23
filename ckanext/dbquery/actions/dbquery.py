@@ -18,22 +18,25 @@ def query_database(context, data_dict):
     query = data_dict.get('query')
     query_url = toolkit.config.get('ckanext.dbquery.sqlalchemy.url')
     query_engine = None
-    result = None
     try:
         if query_url:
             # A separate, short-lived connection also avoids retaining session
             # settings supplied through arbitrary SQL between requests.
             query_engine = create_engine(query_url, poolclass=NullPool)
         engine = query_engine if query_engine is not None else model.meta.engine
-        result = engine.execute(text(query))
-        if result.returns_rows:
-            rows = result.fetchall()
-            colnames = list(result.keys())
-            message = f"Query returned {len(rows)} rows"
-        else:
-            rows = []
-            colnames = []
-            message = f"Query affected {result.rowcount} rows"
+        with engine.begin() as connection:
+            result = connection.execute(text(query))
+            try:
+                if result.returns_rows:
+                    rows = result.fetchall()
+                    colnames = list(result.keys())
+                    message = f"Query returned {len(rows)} rows"
+                else:
+                    rows = []
+                    colnames = []
+                    message = f"Query affected {result.rowcount} rows"
+            finally:
+                result.close()
     except Exception as e:
         if query_url:
             # Connection errors can contain credentials from the configured URL.
@@ -45,8 +48,6 @@ def query_database(context, data_dict):
         log.critical(f"Error executing query {query}: {e}")
         raise toolkit.ValidationError({"query": f"Invalid Query: {e}"})
     finally:
-        if result is not None:
-            result.close()
         if query_engine is not None:
             query_engine.dispose()
 
