@@ -2,7 +2,8 @@ import logging
 import datetime
 from ckanext.dbquery.model import DBQueryExecuted
 from sqlalchemy.sql.expression import text
-from sqlalchemy import func
+from sqlalchemy import create_engine, func
+from sqlalchemy.pool import NullPool
 from ckan import model
 from ckan.plugins import toolkit
 
@@ -11,17 +12,18 @@ log = logging.getLogger(__name__)
 
 
 def query_database(context, data_dict):
-    """Execute a database query and return the results using CKAN's engine."""
+    """Execute SQL using the configured query connection, then record it in CKAN."""
     toolkit.check_access('query_database', context, data_dict)
 
     query = data_dict.get('query')
-    # Use CKAN's SQLAlchemy engine
-    engine = model.meta.engine
-
+    query_url = toolkit.config.get('ckanext.dbquery.sqlalchemy.url')
+    query_engine = None
     try:
-        # SQLAlchemy 2 requires an explicit connection and transaction.
-        # Consume results before closing it; successful writes are committed
-        # and errors roll back before the connection returns to the pool.
+        if query_url:
+            # A separate, short-lived connection also avoids retaining session
+            # settings supplied through arbitrary SQL between requests.
+            query_engine = create_engine(query_url, poolclass=NullPool)
+        engine = query_engine if query_engine is not None else model.meta.engine
         with engine.begin() as connection:
             result = connection.execute(text(query))
             try:
@@ -36,8 +38,18 @@ def query_database(context, data_dict):
             finally:
                 result.close()
     except Exception as e:
+        if query_url:
+            # Connection errors can contain credentials from the configured URL.
+            log.warning("Configured dbquery connection or query failed (%s)", type(e).__name__)
+            raise toolkit.ValidationError({
+                "query": "Query failed on the configured dbquery connection. "
+                         "Check the connection, SQL and database permissions."
+            }) from None
         log.critical(f"Error executing query {query}: {e}")
         raise toolkit.ValidationError({"query": f"Invalid Query: {e}"})
+    finally:
+        if query_engine is not None:
+            query_engine.dispose()
 
     # Save executed query
     user_obj = context.get('auth_user_obj')
